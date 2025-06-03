@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import PhoneMockups from './PhoneMockups';
 import HeartRain from './hero/HeartRain';
+import { trackHeroCTA } from '@/services/tracking';
 
 // Custom Hook para efeito de digitação
 function useTypewriter(words: string[], typingSpeed = 100, deletingSpeed = 50, delayBetween = 2000) {
@@ -64,6 +65,9 @@ export default function HeroSection() {
 
   // Função para rolagem suave até a seção "plans"
   const scrollToPlans = () => {
+    // Tracking do CTA
+    trackHeroCTA();
+    
     const plansSection = document.getElementById('planos');
     if (plansSection) {
       plansSection.scrollIntoView({ behavior: 'smooth' });

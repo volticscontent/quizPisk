@@ -4,17 +4,30 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import Link from 'next/link';
+import { trackComoFuncionaCTA, trackDesafiosCTA } from '@/services/tracking';
 
-const GameModeCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
+const GameModeCard = ({ mode, index }: { mode: any; index: number }) => (
   <motion.div
-    whileHover={{ scale: 1.02 }}
-    className="relative group bg-black rounded-xl p-6 border border-white/5 hover:border-red-500/20 transition-all duration-300"
+    key={mode.title}
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay: index * 0.1 }}
+    className="group relative bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 hover:border-red-500/30 transition-all duration-300 cursor-pointer"
+    onClick={() => trackComoFuncionaCTA(mode.title)}
   >
-    <div className="absolute inset-0 bg-gradient-to-b from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
-    <div className="relative z-10">
-      <div className="text-red-500 w-12 h-12 mb-4">{icon}</div>
-      <h3 className="text-white text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-neutral-400 text-sm">{description}</p>
+    <div className="flex items-start space-x-4">
+      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-xl flex items-center justify-center group-hover:from-red-500/30 group-hover:to-red-600/30 transition-all duration-300">
+        {mode.icon}
+      </div>
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-red-400 transition-colors duration-300">
+          {mode.title}
+        </h3>
+        <p className="text-gray-400 text-sm leading-relaxed">
+          {mode.description}
+        </p>
+      </div>
     </div>
   </motion.div>
 );
@@ -262,9 +275,10 @@ export default function ComoFuncionaSection() {
           <div className="mt-12 text-center">
             <Link 
               href="#planos"
-              className="inline-flex items-center px-8 py-4 rounded-full bg-gradient-to-r from-red-600 to-red-800 text-white font-semibold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-red-500/25"
+              onClick={() => trackDesafiosCTA()}
+              className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-red-600 to-red-800 text-white font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-red-500/25"
             >
-              Quero quebrar a rotina
+              Ver Planos
             </Link>
           </div>
         </div>
@@ -306,7 +320,7 @@ export default function ComoFuncionaSection() {
                     viewport={{ once: true }}
                     transition={{ delay: (index % firstRowGames.length) * 0.05 }}
                   >
-                    <GameModeCard {...mode} />
+                    <GameModeCard mode={mode} index={index} />
                   </motion.div>
                 </li>
               ))}
@@ -329,7 +343,7 @@ export default function ComoFuncionaSection() {
                     viewport={{ once: true }}
                     transition={{ delay: (index % secondRowGames.length) * 0.05 }}
                   >
-                    <GameModeCard {...mode} />
+                    <GameModeCard mode={mode} index={index} />
                   </motion.div>
                 </li>
               ))}

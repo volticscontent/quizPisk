@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { trackPresenteCTA } from '@/services/tracking';
 
 const features = [
   {
@@ -80,6 +81,7 @@ export default function PresenteSection() {
           >
             <Link
               href="#planos"
+              onClick={() => trackPresenteCTA('dar_presente')}
               className="inline-flex items-center px-8 py-4 rounded-full bg-gradient-to-r from-red-600 to-red-800 text-white font-semibold text-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-red-500/25"
             >
               Quero Dar de Presente
@@ -120,6 +122,7 @@ export default function PresenteSection() {
             <div className="absolute -inset-1"></div>
             <Link
               href="#planos"
+              onClick={() => trackPresenteCTA('ver_planos')}
               className="relative inline-flex items-center px-12 py-6 rounded-full bg-black border border-white text-white font-bold text-xl md:text-2xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-xl hover:shadow-red-500/25"
             >
               Ver Planos e Começar o Jogo
