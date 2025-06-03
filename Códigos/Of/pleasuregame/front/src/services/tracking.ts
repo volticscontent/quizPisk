@@ -1,3 +1,11 @@
+// Declaração de tipos para window
+declare global {
+  interface Window {
+    fbq: any;
+    utmify: any;
+  }
+}
+
 // Eventos específicos por seção
 export const trackHeroCTA = () => {
   // Facebook Pixel
