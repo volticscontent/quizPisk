@@ -1,16 +1,54 @@
 "use client";
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import HeroSection from '@/components/vendas/HeroSection';
-import ComoFuncionaSection from '@/components/vendas/ComoFuncionaSection';
-import FooterSection from '@/components/common/FooterSection';
-import RecursosSection from '@/components/vendas/RecursosSection';
-import TemasSection from '@/components/vendas/TemasSection';
-import TestimonialsSection from '@/components/vendas/TestimonialsSection';
-import PlansSection from "@/components/vendas/PlansSection";
-import FaqSection from "@/components/vendas/FaqSection";
-import ValorSection from "@/components/vendas/ValorSection";
-import PresenteSection from "@/components/vendas/PresenteSection";
+
+// Dynamic imports para componentes que usam useEffect (evita problemas de hidratação)
+const ComoFuncionaSection = dynamic(() => import('@/components/vendas/ComoFuncionaSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
+
+const FooterSection = dynamic(() => import('@/components/common/FooterSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-[200px] bg-black" />
+});
+
+const RecursosSection = dynamic(() => import('@/components/vendas/RecursosSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
+
+const TemasSection = dynamic(() => import('@/components/vendas/TemasSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
+
+const TestimonialsSection = dynamic(() => import('@/components/vendas/TestimonialsSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
+
+const PlansSection = dynamic(() => import('@/components/vendas/PlansSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
+
+const FaqSection = dynamic(() => import('@/components/vendas/FaqSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
+
+const ValorSection = dynamic(() => import('@/components/vendas/ValorSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
+
+const PresenteSection = dynamic(() => import('@/components/vendas/PresenteSection'), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-black" />
+});
 
 export default function PaginaLanding() {
   return (
