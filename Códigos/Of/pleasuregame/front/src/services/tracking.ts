@@ -17,7 +17,8 @@ export const trackHeroCTA = () => {
     });
   }
 
-  // UTMify
+  // UTMify - TEMPORARIAMENTE DESABILITADO
+  
   if (typeof window !== 'undefined' && window.utmify) {
     window.utmify.track('HeroSection_QueroJogar', {
       section: 'hero',
@@ -26,6 +27,7 @@ export const trackHeroCTA = () => {
       value: 0
     });
   }
+  
 
   console.log('🎯 Tracking: Hero Section - Quero Jogar clicked');
 };
@@ -40,7 +42,8 @@ export const trackComoFuncionaCTA = (gameMode: string) => {
     });
   }
 
-  // UTMify
+  // UTMify - TEMPORARIAMENTE DESABILITADO
+  /*
   if (typeof window !== 'undefined' && window.utmify) {
     window.utmify.track('ComoFunciona_GameModeClick', {
       section: 'como_funciona',
@@ -49,6 +52,7 @@ export const trackComoFuncionaCTA = (gameMode: string) => {
       value: 0
     });
   }
+  */
 
   console.log(`🎯 Tracking: Como Funciona - ${gameMode} clicked`);
 };
@@ -72,7 +76,8 @@ export const trackPresenteCTA = (buttonType: 'dar_presente' | 'ver_planos') => {
     });
   }
 
-  // UTMify
+  // UTMify - TEMPORARIAMENTE DESABILITADO
+  /*
   if (typeof window !== 'undefined' && window.utmify) {
     window.utmify.track(eventName, {
       section: 'presente',
@@ -82,6 +87,7 @@ export const trackPresenteCTA = (buttonType: 'dar_presente' | 'ver_planos') => {
       value: 0
     });
   }
+  */
 
   console.log(`🎯 Tracking: Presente Section - ${buttonText} clicked`);
 };
@@ -96,7 +102,8 @@ export const trackDesafiosCTA = () => {
     });
   }
 
-  // UTMify
+  // UTMify - TEMPORARIAMENTE DESABILITADO
+  /*
   if (typeof window !== 'undefined' && window.utmify) {
     window.utmify.track('DesafiosSection_VerPlanos', {
       section: 'desafios',
@@ -105,6 +112,7 @@ export const trackDesafiosCTA = () => {
       value: 0
     });
   }
+  */
 
   console.log('🎯 Tracking: Desafios Section - Ver Planos clicked');
 }; 

@@ -15,12 +15,6 @@ declare global {
 
 export default function PixelManager() {
   useEffect(() => {
-    // Configurar pixel do Facebook
-    if (typeof window !== 'undefined' && window.fbq) {
-      window.fbq('init', PIXEL_CONFIG.FACEBOOK_PIXEL_ID);
-      window.fbq('track', 'PageView');
-    }
-
     // Configurar dataLayer para GTM (se disponível)
     if (typeof window !== 'undefined' && !window.dataLayer) {
       window.dataLayer = [];
@@ -49,7 +43,8 @@ export default function PixelManager() {
         }}
       />
 
-      {/* UTM Script (Amplo) */}
+      {/* UTMify - TEMPORARIAMENTE DESABILITADO PARA CORRIGIR ERROS */}
+      {/* 
       <Script
         src="https://cdn.utmify.com.br/scripts/utms/latest.js"
         data-utmify-prevent-xcod-sck="true"
@@ -59,7 +54,6 @@ export default function PixelManager() {
         defer
       />
 
-      {/* UTM Script (Pixel Personalizado) */}
       <Script
         id="utmify-pixel"
         strategy="afterInteractive"
@@ -74,6 +68,7 @@ export default function PixelManager() {
           `,
         }}
       />
+      */}
 
       {/* NoScript fallback para Facebook Pixel */}
       <noscript>
@@ -134,7 +129,8 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
       }
     }
 
-    // 2. UTMify - Evento personalizado
+    // 2. UTMify - Evento personalizado - TEMPORARIAMENTE DESABILITADO
+    /*
     if (window.pixelId) {
       const utmifyData = {
         event: 'initiate_checkout',
@@ -156,6 +152,7 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
         console.warn('UTMify tracking failed:', error);
       });
     }
+    */
 
     // 3. Google Analytics 4 (se disponível)
     if (window.gtag) {
