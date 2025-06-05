@@ -70,39 +70,95 @@ export default function BarraNavegacao() {
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
+    // Detectar se é dispositivo móvel
+    const isMobile = /iphone|ipad|ipod|android|blackberry|mini|windows\sce|palm/i.test(navigator.userAgent.toLowerCase());
+    
     // Função para garantir que o vídeo seja reproduzido
-    const playVideo = () => {
+    const playVideo = async () => {
       if (video0Ref.current) {
-        // Definir currentTime para 0 para garantir que o vídeo comece do início
-        video0Ref.current.currentTime = 0;
-        // Tentar reproduzir o vídeo com tratamento de erro
-        video0Ref.current.play()
-          .catch(err => {
-            console.log("Erro ao reproduzir vídeo:", err);
-            // Em caso de erro, tenta novamente após 1 segundo
-            setTimeout(playVideo, 1000);
-          });
+        const video = video0Ref.current;
+        
+        try {
+          // Para dispositivos móveis, usar estratégia mais conservadora
+          if (isMobile) {
+            video.preload = 'none';
+            video.muted = true;
+            video.playsInline = true;
+            video.setAttribute('webkit-playsinline', 'true');
+            
+            // Verificar se o vídeo pode ser carregado
+            const canPlay = await new Promise((resolve) => {
+              const timeout = setTimeout(() => resolve(false), 3000);
+              
+              video.addEventListener('canplaythrough', () => {
+                clearTimeout(timeout);
+                resolve(true);
+              }, { once: true });
+              
+              video.addEventListener('error', () => {
+                clearTimeout(timeout);
+                resolve(false);
+              }, { once: true });
+              
+              video.load();
+            });
+            
+            if (canPlay) {
+              await video.play();
+            } else {
+              // Se falhar, ocultar o vídeo
+              video.style.display = 'none';
+            }
+          } else {
+            // Para desktop, comportamento otimizado
+            video.currentTime = 0;
+            video.muted = true;
+            video.playsInline = true;
+            
+            await video.play();
+          }
+        } catch (err) {
+          console.warn("Erro ao reproduzir vídeo:", err);
+          
+          // Fallback: ocultar vídeo se houver erro persistente
+          if (video0Ref.current) {
+            video0Ref.current.style.display = 'none';
+          }
+        }
       }
     };
 
-    // Iniciar a reprodução do vídeo
-    playVideo();
+    // Aguardar um pouco antes de tentar reproduzir
+    const timer = setTimeout(playVideo, 500);
 
-    // Adicionar evento para detectar quando o vídeo está pausado ou congelado
+    // Adicionar evento para detectar quando o vídeo está pausado (apenas desktop)
     const handlePause = () => {
+      if (video0Ref.current && !isMobile) {
+        setTimeout(playVideo, 1000);
+      }
+    };
+
+    // Adicionar evento para detectar erros de rede
+    const handleError = (e: Event) => {
+      console.warn("Erro de rede no vídeo:", e);
       if (video0Ref.current) {
-        playVideo();
+        video0Ref.current.style.display = 'none';
       }
     };
 
     if (video0Ref.current) {
-      video0Ref.current.addEventListener('pause', handlePause);
+      if (!isMobile) {
+        video0Ref.current.addEventListener('pause', handlePause);
+      }
+      video0Ref.current.addEventListener('error', handleError);
     }
     
     return () => {
+      clearTimeout(timer);
       // Limpar eventos quando o componente for desmontado
       if (video0Ref.current) {
         video0Ref.current.removeEventListener('pause', handlePause);
+        video0Ref.current.removeEventListener('error', handleError);
       }
     };
   }, []);
@@ -120,14 +176,38 @@ export default function BarraNavegacao() {
             <div className="relative h-14 w-14 md:h-14 md:w-16 overflow-visible">
               <video 
                 ref={video0Ref}
-                preload="auto" 
-                autoPlay 
+                preload="metadata"
+                autoPlay={false}
                 loop 
                 muted
-                playsInline 
+                playsInline
+                webkit-playsinline="true"
+                controls={false}
+                disablePictureInPicture
+                disableRemotePlayback
                 src="/videos/hero/dh.webm" 
                 className="w-full h-full object-contain scale-125"
-              />
+                style={{
+                  backgroundColor: 'transparent',
+                  objectFit: 'contain'
+                }}
+                onError={(e) => {
+                  console.warn('Erro no vídeo:', e);
+                  if (e.currentTarget) {
+                    e.currentTarget.style.display = 'none';
+                  }
+                }}
+                onLoadStart={() => {
+                  console.log('Vídeo começou a carregar');
+                }}
+                onCanPlay={() => {
+                  console.log('Vídeo pode ser reproduzido');
+                }}
+              >
+                {/* Fallback para navegadores que não suportam WebM */}
+                <source src="/videos/hero/dh.webm" type="video/webm" />
+                Seu navegador não suporta vídeos.
+              </video>
             </div>
             <div className="text-white font-bold text-3xl md:text-4xl tracking-wide">
               <span className="text-white">Love</span>

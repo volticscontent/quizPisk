@@ -7,46 +7,33 @@ import PhoneMockups from './PhoneMockups';
 import HeartRain from './hero/HeartRain';
 import { trackHeroCTA } from '@/services/tracking';
 
-// Custom Hook para efeito de digitação
-function useTypewriter(words: string[], typingSpeed = 100, deletingSpeed = 50, delayBetween = 2000) {
+// Custom Hook para efeito de digitação otimizado
+function useTypewriter(words: string[], typingSpeed = 150, deletingSpeed = 75, delayBetween = 2500) {
   const [currentText, setCurrentText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isWaiting, setIsWaiting] = useState(false);
   
   useEffect(() => {
-    // Se estiver em modo de espera, aguardar o tempo e depois mudar para deleção
-    if (isWaiting) {
-      const waitTimer = setTimeout(() => {
-        setIsWaiting(false);
-        setIsDeleting(true);
-      }, delayBetween);
-      return () => clearTimeout(waitTimer);
-    }
-    
     const target = words[currentIndex];
     let timer: NodeJS.Timeout;
     
     if (isDeleting) {
-      // Deletando letra por letra
       if (currentText.length === 0) {
-        // Quando terminar de deletar, passar para a próxima palavra
         setIsDeleting(false);
         setCurrentIndex((prev) => (prev + 1) % words.length);
       } else {
         timer = setTimeout(() => {
-          setCurrentText((prev) => prev.slice(0, prev.length - 1));
+          setCurrentText((prev) => prev.slice(0, -1));
         }, deletingSpeed);
       }
     } else {
-      // Digitação letra por letra
       if (currentText === target) {
-        // Palavra completa, iniciar espera
-        setIsWaiting(true);
+        timer = setTimeout(() => {
+          setIsDeleting(true);
+        }, delayBetween);
       } else {
         timer = setTimeout(() => {
-          const nextChar = target.charAt(currentText.length);
-          setCurrentText((prev) => prev + nextChar);
+          setCurrentText((prev) => prev + target.charAt(prev.length));
         }, typingSpeed);
       }
     }
@@ -54,14 +41,14 @@ function useTypewriter(words: string[], typingSpeed = 100, deletingSpeed = 50, d
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [currentText, currentIndex, isDeleting, isWaiting, words, typingSpeed, deletingSpeed, delayBetween]);
+  }, [currentText, currentIndex, isDeleting, words, typingSpeed, deletingSpeed, delayBetween]);
   
   return currentText;
 }
 
 export default function HeroSection() {
   const words = ["alguém especial", "seu amigo", "quem você ama"];
-  const displayText = useTypewriter(words, 100, 50, 2000);
+  const displayText = useTypewriter(words, 150, 75, 2500);
 
   // Função para rolagem suave até a seção "plans"
   const scrollToPlans = () => {

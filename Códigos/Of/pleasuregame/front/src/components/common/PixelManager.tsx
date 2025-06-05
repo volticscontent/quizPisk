@@ -23,22 +23,39 @@ export default function PixelManager() {
 
   return (
     <>
-      {/* Facebook Pixel */}
+      {/* Facebook Pixel - Otimizado para evitar CORB */}
       <Script
         id="facebook-pixel"
         strategy="afterInteractive"
+        onLoad={() => {
+          // Inicializar pixel apenas após carregamento completo
+          if (typeof window !== 'undefined' && window.fbq) {
+            try {
+              window.fbq('init', PIXEL_CONFIG.FACEBOOK_PIXEL_ID);
+              window.fbq('track', 'PageView');
+            } catch (error) {
+              console.warn('Facebook Pixel initialization failed:', error);
+            }
+          }
+        }}
+        onError={(error) => {
+          console.warn('Facebook Pixel script failed to load:', error);
+        }}
         dangerouslySetInnerHTML={{
           __html: `
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${PIXEL_CONFIG.FACEBOOK_PIXEL_ID}');
-            fbq('track', 'PageView');
+            (function(f,b,e,v,n,t,s) {
+              if(f.fbq) return;
+              n=f.fbq=function(){
+                n.callMethod ? n.callMethod.apply(n,arguments) : n.queue.push(arguments)
+              };
+              if(!f._fbq) f._fbq=n;
+              n.push=n; n.loaded=!0; n.version='2.0';
+              n.queue=[];
+              t=b.createElement(e); t.async=!0;
+              t.src=v; t.crossOrigin='anonymous';
+              s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)
+            })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
           `,
         }}
       />
@@ -70,7 +87,7 @@ export default function PixelManager() {
       />
       */}
 
-      {/* NoScript fallback para Facebook Pixel */}
+      {/* NoScript fallback para Facebook Pixel - Otimizado */}
       <noscript>
         <img 
           height="1" 
@@ -78,6 +95,8 @@ export default function PixelManager() {
           style={{ display: 'none' }}
           src={`https://www.facebook.com/tr?id=${PIXEL_CONFIG.FACEBOOK_PIXEL_ID}&ev=PageView&noscript=1`}
           alt=""
+          crossOrigin="anonymous"
+          loading="lazy"
         />
       </noscript>
     </>
@@ -104,28 +123,32 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
   };
 
   try {
-    // 1. Facebook Pixel - InitiateCheckout (evento padrão)
+    // 1. Facebook Pixel - InitiateCheckout (evento padrão) - Com tratamento de erro
     if (window.fbq) {
-      window.fbq('track', 'InitiateCheckout', {
-        content_name: planName,
-        content_category: 'Lifetime_Subscription',
-        content_ids: [planId],
-        content_type: 'product',
-        value: planValue,
-        currency: 'BRL',
-        num_items: 1
-      });
-
-      // Evento customizado específico do plano
-      const customEvent = PIXEL_CONFIG.PLAN_EVENTS[planId.toUpperCase() as keyof typeof PIXEL_CONFIG.PLAN_EVENTS];
-      if (customEvent) {
-        window.fbq('trackCustom', customEvent.facebook_event, {
-          plan_id: planId,
-          plan_name: planName,
-          plan_value: planValue,
+      try {
+        window.fbq('track', 'InitiateCheckout', {
+          content_name: planName,
+          content_category: 'Lifetime_Subscription',
+          content_ids: [planId],
+          content_type: 'product',
+          value: planValue,
           currency: 'BRL',
-          subscription_type: 'lifetime'
+          num_items: 1
         });
+
+        // Evento customizado específico do plano
+        const customEvent = PIXEL_CONFIG.PLAN_EVENTS[planId.toUpperCase() as keyof typeof PIXEL_CONFIG.PLAN_EVENTS];
+        if (customEvent) {
+          window.fbq('trackCustom', customEvent.facebook_event, {
+            plan_id: planId,
+            plan_name: planName,
+            plan_value: planValue,
+            currency: 'BRL',
+            subscription_type: 'lifetime'
+          });
+        }
+      } catch (fbError) {
+        console.warn('Facebook Pixel tracking failed:', fbError);
       }
     }
 
@@ -154,26 +177,10 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
     }
     */
 
-    // 3. Google Analytics 4 (se disponível)
+    // 3. Google Analytics 4 (se disponível) - Com tratamento de erro
     if (window.gtag) {
-      window.gtag('event', 'begin_checkout', {
-        currency: 'BRL',
-        value: planValue,
-        items: [{
-          item_id: planId,
-          item_name: planName,
-          item_category: 'Lifetime_Subscription',
-          price: planValue,
-          quantity: 1
-        }]
-      });
-    }
-
-    // 4. Google Tag Manager (se disponível)
-    if (window.dataLayer) {
-      window.dataLayer.push({
-        event: 'begin_checkout',
-        ecommerce: {
+      try {
+        window.gtag('event', 'begin_checkout', {
           currency: 'BRL',
           value: planValue,
           items: [{
@@ -183,9 +190,33 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
             price: planValue,
             quantity: 1
           }]
-        },
-        plan_details: eventData
-      });
+        });
+      } catch (gtagError) {
+        console.warn('Google Analytics tracking failed:', gtagError);
+      }
+    }
+
+    // 4. Google Tag Manager (se disponível) - Com tratamento de erro
+    if (window.dataLayer) {
+      try {
+        window.dataLayer.push({
+          event: 'begin_checkout',
+          ecommerce: {
+            currency: 'BRL',
+            value: planValue,
+            items: [{
+              item_id: planId,
+              item_name: planName,
+              item_category: 'Lifetime_Subscription',
+              price: planValue,
+              quantity: 1
+            }]
+          },
+          plan_details: eventData
+        });
+      } catch (gtmError) {
+        console.warn('Google Tag Manager tracking failed:', gtmError);
+      }
     }
 
     // 5. Log estruturado para debug (apenas em desenvolvimento)
@@ -198,16 +229,7 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
     }
 
   } catch (error) {
-    console.error('Tracking error:', error);
-    
-    // Fallback tracking em caso de erro
-    if (window.fbq) {
-      window.fbq('track', 'InitiateCheckout', {
-        content_name: planName,
-        value: planValue,
-        currency: 'BRL'
-      });
-    }
+    console.error('Pixel tracking error:', error);
   }
 };
 

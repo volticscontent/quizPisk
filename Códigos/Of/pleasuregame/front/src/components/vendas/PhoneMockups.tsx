@@ -1,12 +1,90 @@
 "use client";
 
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
+
+// Hook para detectar se é dispositivo móvel
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileDevice = /iphone|ipad|ipod|android|blackberry|mini|windows\sce|palm/i.test(userAgent);
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
+  }, []);
+  
+  return isMobile;
+}
+
+// Hook para carregamento otimizado de vídeos
+function useOptimizedVideo(videoRef: React.RefObject<HTMLVideoElement | null>, isMobile: boolean) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    
+    // Para dispositivos móveis, usar estratégia mais conservadora
+    if (isMobile) {
+      video.preload = 'none';
+      video.muted = true;
+      video.playsInline = true;
+      
+      // Carregar vídeo apenas quando estiver visível
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !isLoaded) {
+              video.preload = 'metadata';
+              video.load();
+              setIsLoaded(true);
+              
+              // Tentar reproduzir após um pequeno delay
+              setTimeout(() => {
+                video.play().catch(() => {
+                  // Se falhar, não fazer nada - deixar o usuário decidir
+                });
+              }, 500);
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      
+      observer.observe(video);
+      
+      return () => {
+        observer.disconnect();
+      };
+    } else {
+      // Para desktop, comportamento normal
+      video.preload = 'metadata';
+      video.autoplay = true;
+      video.play().catch(() => {
+        // Fallback silencioso
+      });
+      setIsLoaded(true);
+    }
+  }, [videoRef, isMobile, isLoaded]);
+  
+  return isLoaded;
+}
 
 export default function PhoneMockups() {
-  // Referências para os vídeos
   const video1Ref = useRef<HTMLVideoElement>(null);
   const video2Ref = useRef<HTMLVideoElement>(null);
   const video3Ref = useRef<HTMLVideoElement>(null);
+  
+  const isMobile = useIsMobile();
+  
+  // Usar hooks otimizados para cada vídeo
+  useOptimizedVideo(video1Ref, isMobile);
+  useOptimizedVideo(video2Ref, isMobile);
+  useOptimizedVideo(video3Ref, isMobile);
 
   return (
     <div 
@@ -28,13 +106,12 @@ export default function PhoneMockups() {
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
           <video 
             ref={video1Ref}
-            preload="metadata"
-            autoPlay 
             loop 
             muted
             playsInline
             className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
             src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-01.webm"
+            style={{ willChange: 'auto' }}
           />
         </div>
       </div>
@@ -55,13 +132,12 @@ export default function PhoneMockups() {
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
           <video 
             ref={video2Ref}
-            preload="metadata"
-            autoPlay 
             loop 
             muted
             playsInline
             className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
             src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-02.webm"
+            style={{ willChange: 'auto' }}
           />
         </div>
       </div>
@@ -82,13 +158,12 @@ export default function PhoneMockups() {
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
           <video 
             ref={video3Ref}
-            preload="metadata"
-            autoPlay 
             loop 
             muted
             playsInline
             className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
             src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEOS-SITE-03.webm"
+            style={{ willChange: 'auto' }}
           />
         </div>
       </div>
