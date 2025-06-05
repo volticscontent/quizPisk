@@ -31,19 +31,10 @@ const data = [
 
 const RoletaDoDesejo = forwardRef<RoletaDoDesejoRef, RoletaDoDesejoProps>((props, ref) => {
   const { onGenderSelect, onReset, onSpinningChange, isMobile } = props;
-  const [mounted, setMounted] = useState(false);
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
   const [selectedGender, setSelectedGender] = useState<Gender>(null);
   const [isSpinning, setIsSpinning] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => {
-      setMounted(false);
-      resetGame();
-    };
-  }, []);
 
   useEffect(() => {
     onSpinningChange?.(isSpinning);
@@ -89,14 +80,6 @@ const RoletaDoDesejo = forwardRef<RoletaDoDesejoRef, RoletaDoDesejoProps>((props
     resetGame,
     isSpinning
   }), [handleSpinClick, resetGame, isSpinning, selectedGender]);
-
-  if (!mounted) {
-    return (
-      <div className="w-full aspect-square flex items-center justify-center">
-        <div className="w-full h-full rounded-full border-4 border-white/20 animate-pulse bg-gradient-to-br from-pink-500/20 to-purple-500/20" />
-      </div>
-    );
-  }
 
   if (!selectedGender) {
     return (

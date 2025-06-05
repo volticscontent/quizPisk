@@ -57,84 +57,15 @@ const moreTestimonials = [
 export default function TestimonialsSection() {
   const [ref, inView] = useInView({ threshold: 0.1, triggerOnce: true });
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (inView && isMounted) {
+    if (inView) {
       const timer = setTimeout(() => {
         setIsAnimating(true);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [inView, isMounted]);
-
-  if (!isMounted) {
-    return (
-      <div className="w-full mx-auto max-w-7xl py-12 bg-black bg-dot-red-200/[0.05]" data-sentry-component="Testimonials">
-        <div className="container flex flex-col items-center justify-center px-4">
-          <h2 className="bg-clip-text text-transparent text-center bg-gradient-to-b from-neutral-200 to-white text-3xl lg:text-5xl font-sans py-2 relative z-20 font-bold tracking-tight">
-            Depoimentos
-          </h2>
-          <p className="max-w-xl text-center text-base md:text-lg text-neutral-200 mb-4">
-            Veja o que nossos clientes estão dizendo sobre a Lovely
-          </p>
-          
-          <div className="h-[40rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden">
-            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-              <ul className="flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap">
-                {testimonials.map((testimonial, index) => (
-                  <li 
-                    key={`first-${index}`}
-                    className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px]"
-                    style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
-                  >
-                    <blockquote>
-                      <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
-                        {testimonial.text}
-                      </span>
-                      <div className="relative z-20 mt-6 flex flex-row items-center">
-                        <span className="flex flex-col gap-1">
-                          <span className="text-sm text-white font-bold">{testimonial.author}</span>
-                          <span className="text-xs text-gray-500 font-normal">{testimonial.time}</span>
-                        </span>
-                      </div>
-                    </blockquote>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-              <ul className="flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap">
-                {moreTestimonials.map((testimonial, index) => (
-                  <li 
-                    key={`second-${index}`}
-                    className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px]"
-                    style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
-                  >
-                    <blockquote>
-                      <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
-                        {testimonial.text}
-                      </span>
-                      <div className="relative z-20 mt-6 flex flex-row items-center">
-                        <span className="flex flex-col gap-1">
-                          <span className="text-sm text-white font-bold">{testimonial.author}</span>
-                          <span className="text-xs text-gray-500 font-normal">{testimonial.time}</span>
-                        </span>
-                      </div>
-                    </blockquote>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [inView]);
 
   return (
     <div className="w-full mx-auto max-w-7xl py-12 bg-black bg-dot-red-200/[0.05]" data-sentry-component="Testimonials">
@@ -183,7 +114,7 @@ export default function TestimonialsSection() {
               {moreTestimonials.concat(moreTestimonials).map((testimonial, index) => (
                 <li 
                   key={`second-${index}`}
-                  className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-oshrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
+                  className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
                   style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
                 >
                   <blockquote>

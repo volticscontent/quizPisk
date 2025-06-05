@@ -225,7 +225,6 @@ const gameModes = [
 
 export default function ComoFuncionaSection() {
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   
   const { ref, inView } = useInView({
     threshold: 0.1,
@@ -233,83 +232,14 @@ export default function ComoFuncionaSection() {
   });
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (inView && isMounted) {
+    if (inView) {
       setIsAnimating(true);
     }
-  }, [inView, isMounted]);
+  }, [inView]);
 
   // Dividir os jogos em duas linhas
   const firstRowGames = gameModes.slice(0, Math.ceil(gameModes.length / 2));
   const secondRowGames = gameModes.slice(Math.ceil(gameModes.length / 2));
-
-  // Não renderizar animações até estar montado
-  if (!isMounted) {
-    return (
-      <section className="relative py-24 bg-black overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-neutral-950 to-black"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-24">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {challenges.map((challenge, index) => (
-                <div key={challenge.question} className="group">
-                  <div className={`h-full bg-gradient-to-b ${challenge.gradient} p-8 rounded-2xl border border-white/5 backdrop-blur-sm`}>
-                    <div className="flex flex-col items-start">
-                      {challenge.icon}
-                      <h3 className="text-2xl font-semibold text-white mb-4">
-                        {challenge.question}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-12 text-center">
-              <Link 
-                href="#planos"
-                className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-red-600 to-red-800 text-white font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-red-500/25"
-              >
-                Ver Planos
-              </Link>
-            </div>
-          </div>
-          <div className="text-center mb-2">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Conheça os jogos que vão transformar sua relação
-            </h2>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/10 to-red-500/10 border border-red-500/20">
-              <span className="text-red-400 text-sm">
-                Interface adaptada para casais hetero, LGBTQIA+ e não monogâmicos
-              </span>
-            </div>
-          </div>
-          <div className="h-[28rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden">
-            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-              <ul className="flex min-w-full shrink-0 gap-6 py-4 w-max flex-nowrap">
-                {firstRowGames.map((mode, index) => (
-                  <li key={`first-${mode.title}-${index}`} className="w-[300px] md:w-[350px] flex-shrink-0">
-                    <GameModeCard mode={mode} index={index} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-              <ul className="flex min-w-full shrink-0 gap-6 py-4 w-max flex-nowrap">
-                {secondRowGames.map((mode, index) => (
-                  <li key={`second-${mode.title}-${index}`} className="w-[300px] md:w-[350px] flex-shrink-0">
-                    <GameModeCard mode={mode} index={index} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="relative py-24 bg-black overflow-hidden">

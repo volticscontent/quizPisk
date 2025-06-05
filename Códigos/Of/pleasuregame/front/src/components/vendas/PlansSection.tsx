@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Check, X, ChevronRight, Star, Trophy } from 'lucide-react';
+import { Check, X, ChevronRight, Trophy } from 'lucide-react';
 import StarsBackground from './plans/StarsBackground';
 import HoverBorderGradient from './plans/HoverBorderGradient';
 import Link from 'next/link';
