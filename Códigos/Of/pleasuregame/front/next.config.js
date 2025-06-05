@@ -128,6 +128,25 @@ const nextConfig = {
       };
     }
 
+    // Corrigir problema "self is not defined" no SSR
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+
+    // Definir variáveis globais para compatibilidade
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      new config.webpack.DefinePlugin({
+        'typeof window': JSON.stringify('object'),
+        'typeof self': JSON.stringify('undefined'),
+      })
+    );
+
     // Configurações para melhor compressão
     config.optimization = {
       ...config.optimization,
