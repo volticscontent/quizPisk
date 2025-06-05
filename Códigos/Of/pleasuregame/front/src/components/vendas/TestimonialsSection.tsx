@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useInView } from 'react-intersection-observer';
+import React, { useEffect, useState } from 'react';
 
 const testimonials = [
   {
@@ -55,17 +54,11 @@ const moreTestimonials = [
 ];
 
 export default function TestimonialsSection() {
-  const [ref, inView] = useInView({ threshold: 0.1, triggerOnce: true });
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (inView) {
-      const timer = setTimeout(() => {
-        setIsAnimating(true);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [inView]);
+    setIsClient(true);
+  }, []);
 
   return (
     <div className="w-full mx-auto max-w-7xl py-12 bg-black bg-dot-red-200/[0.05]" data-sentry-component="Testimonials">
@@ -77,48 +70,74 @@ export default function TestimonialsSection() {
           Veja o que nossos clientes estão dizendo sobre a Lovely
         </p>
         
-        <div ref={ref} className="h-[40rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden">
-          {/* Primeira linha de cards */}
-          <div 
-            className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]"
-          >
-            <ul className={`flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap ${isAnimating ? 'animate-scroll-reverse' : ''}`}>
-              {testimonials.concat(testimonials).map((testimonial, index) => (
-                <li 
-                  key={`first-${index}`}
-                  className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
-                  style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
-                >
-                  <blockquote>
-                    <div className="user-select-none -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)]"></div>
-                    <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
-                      {testimonial.text}
-                    </span>
-                    <div className="relative z-20 mt-6 flex flex-row items-center">
-                      <span className="flex flex-col gap-1">
-                        <span className="text-sm text-white font-bold">{testimonial.author}</span>
-                        <span className="text-xs text-gray-500 font-normal">{testimonial.time}</span>
+        {/* Carrossel com controle de hidratação */}
+        {isClient && (
+          <div className="h-[40rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden">
+            {/* Primeira linha de cards */}
+            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
+              <ul className="flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap testimonials-scroll-reverse">
+                {testimonials.concat(testimonials).map((testimonial, index) => (
+                  <li 
+                    key={`first-${index}`}
+                    className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
+                    style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
+                  >
+                    <blockquote>
+                      <div className="user-select-none -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)]"></div>
+                      <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
+                        {testimonial.text}
                       </span>
-                    </div>
-                  </blockquote>
-                </li>
-              ))}
-            </ul>
-          </div>
+                      <div className="relative z-20 mt-6 flex flex-row items-center">
+                        <span className="flex flex-col gap-1">
+                          <span className="text-sm text-white font-bold">{testimonial.author}</span>
+                          <span className="text-xs text-gray-500 font-normal">{testimonial.time}</span>
+                        </span>
+                      </div>
+                    </blockquote>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          {/* Segunda linha de cards */}
-          <div 
-            className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]"
-          >
-            <ul className={`flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap ${isAnimating ? 'animate-scroll-forward' : ''}`}>
-              {moreTestimonials.concat(moreTestimonials).map((testimonial, index) => (
-                <li 
-                  key={`second-${index}`}
-                  className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
+            {/* Segunda linha de cards */}
+            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
+              <ul className="flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap testimonials-scroll-forward">
+                {moreTestimonials.concat(moreTestimonials).map((testimonial, index) => (
+                  <li 
+                    key={`second-${index}`}
+                    className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
+                    style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
+                  >
+                    <blockquote>
+                      <div className="user-select-none -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)]"></div>
+                      <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
+                        {testimonial.text}
+                      </span>
+                      <div className="relative z-20 mt-6 flex flex-row items-center">
+                        <span className="flex flex-col gap-1">
+                          <span className="text-sm text-white font-bold">{testimonial.author}</span>
+                          <span className="text-xs text-gray-500 font-normal">{testimonial.time}</span>
+                        </span>
+                      </div>
+                    </blockquote>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Fallback para SSR */}
+        {!isClient && (
+          <div className="h-[40rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
+              {testimonials.slice(0, 6).map((testimonial, index) => (
+                <div 
+                  key={`fallback-${index}`}
+                  className="w-full max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 transform transition-transform duration-300 hover:scale-[1.02]"
                   style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
                 >
                   <blockquote>
-                    <div className="user-select-none -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)]"></div>
                     <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
                       {testimonial.text}
                     </span>
@@ -129,36 +148,36 @@ export default function TestimonialsSection() {
                       </span>
                     </div>
                   </blockquote>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style jsx>{`
-        @keyframes scroll-reverse {
-          from { transform: translateX(0); }
-          to { transform: translateX(calc(-50% - 1rem)); }
+        @keyframes testimonials-scroll-reverse {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-50% - 1rem)); }
         }
 
-        @keyframes scroll-forward {
-          from { transform: translateX(calc(-50% - 1rem)); }
-          to { transform: translateX(0); }
+        @keyframes testimonials-scroll-forward {
+          0% { transform: translateX(calc(-50% - 1rem)); }
+          100% { transform: translateX(0); }
         }
 
-        .animate-scroll-reverse {
-          animation: scroll-reverse 40s linear infinite;
-          animation-play-state: running;
+        .testimonials-scroll-reverse {
+          animation: testimonials-scroll-reverse 40s linear infinite;
+          animation-delay: 0.3s;
         }
 
-        .animate-scroll-forward {
-          animation: scroll-forward 30s linear infinite;
-          animation-play-state: running;
+        .testimonials-scroll-forward {
+          animation: testimonials-scroll-forward 30s linear infinite;
+          animation-delay: 0.5s;
         }
 
-        .animate-scroll-reverse:hover,
-        .animate-scroll-forward:hover {
+        .testimonials-scroll-reverse:hover,
+        .testimonials-scroll-forward:hover {
           animation-play-state: paused;
         }
       `}</style>
