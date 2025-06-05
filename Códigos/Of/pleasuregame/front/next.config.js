@@ -114,7 +114,6 @@ const nextConfig = {
 
   // Configurações experimentais para melhor performance
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['lucide-react'],
   },
 };
