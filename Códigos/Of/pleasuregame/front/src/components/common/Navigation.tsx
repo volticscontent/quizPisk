@@ -31,19 +31,17 @@ export default function BarraNavegacao() {
       await signOut();
       closeMobileMenu();
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      // Manter apenas erro crítico sem log
     }
   };
 
   // Fechar menu mobile quando clicar em um link
   const closeMobileMenu = () => {
-    console.log('Fechando menu mobile');
     setIsMobileMenuOpen(false);
   };
 
   // Toggle do menu mobile
   const toggleMobileMenu = () => {
-    console.log('Toggle menu mobile - estado atual:', isMobileMenuOpen);
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
@@ -118,9 +116,7 @@ export default function BarraNavegacao() {
             await video.play();
           }
         } catch (err) {
-          console.warn("Erro ao reproduzir vídeo:", err);
-          
-          // Fallback: ocultar vídeo se houver erro persistente
+          // Fallback silencioso para erro de reprodução
           if (video0Ref.current) {
             video0Ref.current.style.display = 'none';
           }
@@ -140,7 +136,6 @@ export default function BarraNavegacao() {
 
     // Adicionar evento para detectar erros de rede
     const handleError = (e: Event) => {
-      console.warn("Erro de rede no vídeo:", e);
       if (video0Ref.current) {
         video0Ref.current.style.display = 'none';
       }
@@ -165,7 +160,7 @@ export default function BarraNavegacao() {
 
   // Debug do estado
   useEffect(() => {
-    console.log('Estado do menu mobile mudou:', isMobileMenuOpen);
+    // Removido log de debug
   }, [isMobileMenuOpen]);
 
   return (
@@ -192,16 +187,15 @@ export default function BarraNavegacao() {
                   objectFit: 'contain'
                 }}
                 onError={(e) => {
-                  console.warn('Erro no vídeo:', e);
                   if (e.currentTarget) {
                     e.currentTarget.style.display = 'none';
                   }
                 }}
                 onLoadStart={() => {
-                  console.log('Vídeo começou a carregar');
+                  // Removido log de debug
                 }}
                 onCanPlay={() => {
-                  console.log('Vídeo pode ser reproduzido');
+                  // Removido log de debug
                 }}
               >
                 {/* Fallback para navegadores que não suportam WebM */}

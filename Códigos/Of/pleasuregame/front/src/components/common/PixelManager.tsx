@@ -34,12 +34,12 @@ export default function PixelManager() {
               window.fbq('init', PIXEL_CONFIG.FACEBOOK_PIXEL_ID);
               window.fbq('track', 'PageView');
             } catch (error) {
-              console.warn('Facebook Pixel initialization failed:', error);
+              // Fallback silencioso para erro do Facebook Pixel
             }
           }
         }}
         onError={(error) => {
-          console.warn('Facebook Pixel script failed to load:', error);
+          // Fallback silencioso se script não carregar
         }}
         dangerouslySetInnerHTML={{
           __html: `
@@ -60,8 +60,7 @@ export default function PixelManager() {
         }}
       />
 
-      {/* UTMify - TEMPORARIAMENTE DESABILITADO PARA CORRIGIR ERROS */}
-      {/* 
+    
       <Script
         src="https://cdn.utmify.com.br/scripts/utms/latest.js"
         data-utmify-prevent-xcod-sck="true"
@@ -85,7 +84,6 @@ export default function PixelManager() {
           `,
         }}
       />
-      */}
 
       {/* NoScript fallback para Facebook Pixel - Otimizado */}
       <noscript>
@@ -148,34 +146,9 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
           });
         }
       } catch (fbError) {
-        console.warn('Facebook Pixel tracking failed:', fbError);
+        // Fallback silencioso para erro do Facebook Pixel
       }
     }
-
-    // 2. UTMify - Evento personalizado - TEMPORARIAMENTE DESABILITADO
-    /*
-    if (window.pixelId) {
-      const utmifyData = {
-        event: 'initiate_checkout',
-        subscription_type: 'lifetime',
-        ...eventData
-      };
-
-      fetch(PIXEL_CONFIG.UTMIFY_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          pixel_id: PIXEL_CONFIG.UTMIFY_PIXEL_ID,
-          ...utmifyData
-        })
-      }).catch(error => {
-        console.warn('UTMify tracking failed:', error);
-      });
-    }
-    */
 
     // 3. Google Analytics 4 (se disponível) - Com tratamento de erro
     if (window.gtag) {
@@ -192,7 +165,7 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
           }]
         });
       } catch (gtagError) {
-        console.warn('Google Analytics tracking failed:', gtagError);
+        // Fallback silencioso para erro do Google Analytics
       }
     }
 
@@ -215,21 +188,12 @@ export const trackPlanCheckout = (planId: PlanId, planName: string, planValue: n
           plan_details: eventData
         });
       } catch (gtmError) {
-        console.warn('Google Tag Manager tracking failed:', gtmError);
+        // Fallback silencioso para erro do Google Tag Manager
       }
     }
 
-    // 5. Log estruturado para debug (apenas em desenvolvimento)
-    if (process.env.NODE_ENV === 'development') {
-      console.group('🎯 Professional Pixel Tracking - Plan Checkout');
-      console.log('Plan Details:', eventData);
-      console.log('Facebook Pixel ID:', PIXEL_CONFIG.FACEBOOK_PIXEL_ID);
-      console.log('UTMify Pixel ID:', PIXEL_CONFIG.UTMIFY_PIXEL_ID);
-      console.groupEnd();
-    }
-
   } catch (error) {
-    console.error('Pixel tracking error:', error);
+    // Fallback silencioso para erro geral
   }
 };
 
@@ -265,6 +229,6 @@ export const trackPlanView = (planId: PlanId) => {
     }
 
   } catch (error) {
-    console.error('Plan view tracking error:', error);
+    // Fallback silencioso para erro de visualização
   }
 }; 

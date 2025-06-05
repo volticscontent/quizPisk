@@ -15,8 +15,7 @@ export default function AuthHeader() {
         // Tentar reproduzir o vídeo com tratamento de erro
         video0Ref.current.play()
           .catch(err => {
-            console.log("Erro ao reproduzir vídeo:", err);
-            // Em caso de erro, tenta novamente após 1 segundo
+            // Fallback silencioso - tenta novamente após 1 segundo
             setTimeout(playVideo, 1000);
           });
       }

@@ -28,8 +28,6 @@ export const trackHeroCTA = () => {
     });
   }
   
-
-  console.log('🎯 Tracking: Hero Section - Quero Jogar clicked');
 };
 
 export const trackComoFuncionaCTA = (gameMode: string) => {
@@ -53,8 +51,6 @@ export const trackComoFuncionaCTA = (gameMode: string) => {
     });
   }
   */
-
-  console.log(`🎯 Tracking: Como Funciona - ${gameMode} clicked`);
 };
 
 export const trackPresenteCTA = (buttonType: 'dar_presente' | 'ver_planos') => {
@@ -88,8 +84,6 @@ export const trackPresenteCTA = (buttonType: 'dar_presente' | 'ver_planos') => {
     });
   }
   */
-
-  console.log(`🎯 Tracking: Presente Section - ${buttonText} clicked`);
 };
 
 export const trackDesafiosCTA = () => {
@@ -113,6 +107,4 @@ export const trackDesafiosCTA = () => {
     });
   }
   */
-
-  console.log('🎯 Tracking: Desafios Section - Ver Planos clicked');
 }; 

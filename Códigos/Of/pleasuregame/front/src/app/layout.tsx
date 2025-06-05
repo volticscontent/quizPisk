@@ -54,57 +54,11 @@ export default function RootLayout({
         
         {/* Preload de recursos críticos */}
         <link rel="preload" href="/videos/hero/dh.webm" as="video" type="video/webm" />
+        <link rel="preload" href="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-01.gif" as="image" />
+        <link rel="preload" href="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-02_1.gif" as="image" />
+        <link rel="preload" href="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEOS-SITE-03_1.gif" as="image" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
-        {/* Script para detectar problemas de carregamento */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                // Detectar iPhone e configurar variáveis globais
-                window.isIPhone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                window.isHydrated = false;
-                
-                // Timeout para detectar problemas de hidratação
-                window.hydrationTimeout = setTimeout(function() {
-                  if (!window.isHydrated) {
-                    console.warn('Hydration timeout detected, forcing reload...');
-                    // Não recarregar automaticamente, apenas logar
-                    window.hydrationFailed = true;
-                  }
-                }, 10000);
-                
-                // Detectar quando a página está totalmente carregada
-                window.addEventListener('load', function() {
-                  setTimeout(function() {
-                    window.isHydrated = true;
-                    if (window.hydrationTimeout) {
-                      clearTimeout(window.hydrationTimeout);
-                    }
-                  }, 1000);
-                });
-                
-                // Detectar erros de JavaScript
-                window.addEventListener('error', function(e) {
-                  console.error('JavaScript error detected:', e.error);
-                  if (window.isIPhone) {
-                    // Log específico para iPhone
-                    console.warn('iPhone error:', e.filename, e.lineno, e.message);
-                  }
-                });
-                
-                // Detectar erros de Promise rejeitadas
-                window.addEventListener('unhandledrejection', function(e) {
-                  console.error('Unhandled promise rejection:', e.reason);
-                  if (window.isIPhone) {
-                    console.warn('iPhone promise rejection:', e.reason);
-                  }
-                });
-              })();
-            `,
-          }}
-        />
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <ProgressiveLoader>

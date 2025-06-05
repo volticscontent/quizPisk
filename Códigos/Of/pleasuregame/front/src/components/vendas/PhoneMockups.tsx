@@ -19,72 +19,25 @@ function useIsMobile() {
   return isMobile;
 }
 
-// Hook para carregamento otimizado de vídeos
-function useOptimizedVideo(videoRef: React.RefObject<HTMLVideoElement | null>, isMobile: boolean) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  
-  useEffect(() => {
-    if (!videoRef.current) return;
-    
-    const video = videoRef.current;
-    
-    // Para dispositivos móveis, usar estratégia mais conservadora
-    if (isMobile) {
-      video.preload = 'none';
-      video.muted = true;
-      video.playsInline = true;
-      
-      // Carregar vídeo apenas quando estiver visível
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting && !isLoaded) {
-              video.preload = 'metadata';
-              video.load();
-              setIsLoaded(true);
-              
-              // Tentar reproduzir após um pequeno delay
-              setTimeout(() => {
-                video.play().catch(() => {
-                  // Se falhar, não fazer nada - deixar o usuário decidir
-                });
-              }, 500);
-            }
-          });
-        },
-        { threshold: 0.1 }
-      );
-      
-      observer.observe(video);
-      
-      return () => {
-        observer.disconnect();
-      };
-    } else {
-      // Para desktop, comportamento normal
-      video.preload = 'metadata';
-      video.autoplay = true;
-      video.play().catch(() => {
-        // Fallback silencioso
-      });
-      setIsLoaded(true);
-    }
-  }, [videoRef, isMobile, isLoaded]);
-  
-  return isLoaded;
-}
-
 export default function PhoneMockups() {
-  const video1Ref = useRef<HTMLVideoElement>(null);
-  const video2Ref = useRef<HTMLVideoElement>(null);
-  const video3Ref = useRef<HTMLVideoElement>(null);
+  const image1Ref = useRef<HTMLImageElement>(null);
+  const image2Ref = useRef<HTMLImageElement>(null);
+  const image3Ref = useRef<HTMLImageElement>(null);
   
   const isMobile = useIsMobile();
   
-  // Usar hooks otimizados para cada vídeo
-  useOptimizedVideo(video1Ref, isMobile);
-  useOptimizedVideo(video2Ref, isMobile);
-  useOptimizedVideo(video3Ref, isMobile);
+  const [gifError, setGifError] = useState({ gif1: false, gif2: false, gif3: false });
+
+  // URLs dos GIFs
+  const gifUrls = {
+    gif1: "https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-01.gif",
+    gif2: "https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-02_1.gif",
+    gif3: "https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEOS-SITE-03_1.gif"
+  };
+
+  const handleImageError = (gifKey: keyof typeof gifError) => {
+    setGifError(prev => ({ ...prev, [gifKey]: true }));
+  };
 
   return (
     <div 
@@ -104,15 +57,20 @@ export default function PhoneMockups() {
           src="/images/mockup.webp"
         />
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
-          <video 
-            ref={video1Ref}
-            loop 
-            muted
-            playsInline
-            className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
-            src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-01.webm"
-            style={{ willChange: 'auto' }}
-          />
+          {gifError.gif1 ? (
+            <div className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+              <span className="text-white text-xs font-medium">Demonstração 1</span>
+            </div>
+          ) : (
+            <img 
+              ref={image1Ref}
+              alt="Demonstração do app - Tela 1"
+              className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
+              src={gifUrls.gif1}
+              loading={isMobile ? "lazy" : "eager"}
+              onError={() => handleImageError('gif1')}
+            />
+          )}
         </div>
       </div>
 
@@ -130,15 +88,20 @@ export default function PhoneMockups() {
           src="/images/mockup.webp"
         />
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
-          <video 
-            ref={video2Ref}
-            loop 
-            muted
-            playsInline
-            className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
-            src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-02.webm"
-            style={{ willChange: 'auto' }}
-          />
+          {gifError.gif2 ? (
+            <div className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+              <span className="text-white text-xs font-medium">Demonstração 2</span>
+            </div>
+          ) : (
+            <img 
+              ref={image2Ref}
+              alt="Demonstração do app - Tela 2"
+              className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
+              src={gifUrls.gif2}
+              loading={isMobile ? "lazy" : "eager"}
+              onError={() => handleImageError('gif2')}
+            />
+          )}
         </div>
       </div>
 
@@ -156,15 +119,20 @@ export default function PhoneMockups() {
           src="/images/mockup.webp"
         />
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
-          <video 
-            ref={video3Ref}
-            loop 
-            muted
-            playsInline
-            className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
-            src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEOS-SITE-03.webm"
-            style={{ willChange: 'auto' }}
-          />
+          {gifError.gif3 ? (
+            <div className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full bg-gradient-to-br from-green-600 to-blue-600 flex items-center justify-center">
+              <span className="text-white text-xs font-medium">Demonstração 3</span>
+            </div>
+          ) : (
+            <img 
+              ref={image3Ref}
+              alt="Demonstração do app - Tela 3"
+              className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
+              src={gifUrls.gif3}
+              loading={isMobile ? "lazy" : "eager"}
+              onError={() => handleImageError('gif3')}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -54,8 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             Cookies.remove('auth_token');
           }
         } catch (error) {
-          console.error('Erro ao inicializar autenticação:', error);
-          Cookies.remove('auth_token');
+          // Fallback silencioso para erro de inicialização
         }
       }
       setLoading(false);
