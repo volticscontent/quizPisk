@@ -7,8 +7,8 @@ import ValorSection from '@/components/vendas/ValorSection';
 import TestimonialsSection from '@/components/vendas/TestimonialsSection';
 import PresenteSection from '@/components/vendas/PresenteSection';
 import PlansSection from '@/components/vendas/PlansSection';
+import FaqSection from '@/components/vendas/FaqSection';
 // import FooterSection from '@/components/common/FooterSection';
-// import FaqSection from '@/components/vendas/FaqSection';
 
 export default function HomePage() {
   return (
@@ -31,8 +31,8 @@ export default function HomePage() {
       {/* Planos */}
       <PlansSection />
 
-      {/* <FaqSection /> */}
-      {/* <div className="section-divider" /> */}
+      {/* FAQ */}
+      <FaqSection />
       
       {/* Footer */}
       {/* <FooterSection /> */}

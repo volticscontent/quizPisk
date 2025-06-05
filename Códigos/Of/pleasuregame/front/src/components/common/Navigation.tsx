@@ -205,7 +205,7 @@ export default function BarraNavegacao() {
                 }}
               >
                 {/* Fallback para navegadores que não suportam WebM */}
-                <source src="/videos/hero/dh.webm" type="video/webm" />
+                <source src="/images/logo.png" type="image/png" />
                 Seu navegador não suporta vídeos.
               </video>
             </div>
