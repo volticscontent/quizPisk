@@ -60,30 +60,39 @@ export default function TestimonialsSection() {
     setIsClient(true);
   }, []);
 
+  // Dividir os depoimentos em duas linhas
+  const firstRowTestimonials = testimonials;
+  const secondRowTestimonials = moreTestimonials;
+
   return (
-    <div className="w-full mx-auto max-w-7xl py-12 bg-black bg-dot-red-200/[0.05]" data-sentry-component="Testimonials">
-      <div className="container flex flex-col items-center justify-center px-4">
-        <h2 className="bg-clip-text text-transparent text-center bg-gradient-to-b from-neutral-200 to-white text-3xl lg:text-5xl font-sans py-2 relative z-20 font-bold tracking-tight">
-          Depoimentos
-        </h2>
-        <p className="max-w-xl text-center text-base md:text-lg text-neutral-200 mb-4">
-          Veja o que nossos clientes estão dizendo sobre a Lovely
-        </p>
+    <section className="relative py-24 bg-black overflow-hidden">
+      {/* Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-neutral-950 to-black"></div>
+      
+      {/* Content */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="bg-clip-text text-transparent text-center bg-gradient-to-b from-neutral-200 to-white text-3xl lg:text-5xl font-sans py-2 relative z-20 font-bold tracking-tight">
+            Depoimentos
+          </h2>
+          <p className="max-w-xl mx-auto text-center text-base md:text-lg text-neutral-200 mt-4">
+            Veja o que nossos clientes estão dizendo sobre a Lovely
+          </p>
+        </div>
         
         {/* Carrossel com controle de hidratação */}
         {isClient && (
           <div className="h-[40rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden">
             {/* Primeira linha de cards */}
             <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-              <ul className="flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap testimonials-scroll-reverse">
-                {testimonials.concat(testimonials).map((testimonial, index) => (
-                  <li 
-                    key={`first-${index}`}
+              <div className="flex gap-6 py-4 w-max testimonials-scroll-reverse">
+                {firstRowTestimonials.concat(firstRowTestimonials).map((testimonial, index) => (
+                  <div 
+                    key={`first-${testimonial.author}-${index}`}
                     className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
                     style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
                   >
                     <blockquote>
-                      <div className="user-select-none -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)]"></div>
                       <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
                         {testimonial.text}
                       </span>
@@ -94,22 +103,21 @@ export default function TestimonialsSection() {
                         </span>
                       </div>
                     </blockquote>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
 
             {/* Segunda linha de cards */}
             <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-              <ul className="flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap testimonials-scroll-forward">
-                {moreTestimonials.concat(moreTestimonials).map((testimonial, index) => (
-                  <li 
-                    key={`second-${index}`}
+              <div className="flex gap-6 py-4 w-max testimonials-scroll-forward">
+                {secondRowTestimonials.concat(secondRowTestimonials).map((testimonial, index) => (
+                  <div 
+                    key={`second-${testimonial.author}-${index}`}
                     className="w-[350px] max-w-full relative rounded-2xl border border-b-0 flex-shrink-0 border-slate-700 px-8 py-6 md:w-[450px] transform transition-transform duration-300 hover:scale-[1.02]"
                     style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900))" }}
                   >
                     <blockquote>
-                      <div className="user-select-none -z-1 pointer-events-none absolute -left-0.5 -top-0.5 h-[calc(100%_+_4px)] w-[calc(100%_+_4px)]"></div>
                       <span className="relative z-20 text-sm leading-[1.6] text-gray-300 font-normal">
                         {testimonial.text}
                       </span>
@@ -120,9 +128,9 @@ export default function TestimonialsSection() {
                         </span>
                       </div>
                     </blockquote>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           </div>
         )}
@@ -158,22 +166,22 @@ export default function TestimonialsSection() {
       <style jsx>{`
         @keyframes testimonials-scroll-reverse {
           0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-50% - 1rem)); }
+          100% { transform: translateX(calc(-50% - 1.5rem)); }
         }
 
         @keyframes testimonials-scroll-forward {
-          0% { transform: translateX(calc(-50% - 1rem)); }
+          0% { transform: translateX(calc(-50% - 1.5rem)); }
           100% { transform: translateX(0); }
         }
 
         .testimonials-scroll-reverse {
-          animation: testimonials-scroll-reverse 40s linear infinite;
-          animation-delay: 0.3s;
+          animation: testimonials-scroll-reverse 45s linear infinite;
+          animation-delay: 0.2s;
         }
 
         .testimonials-scroll-forward {
-          animation: testimonials-scroll-forward 30s linear infinite;
-          animation-delay: 0.5s;
+          animation: testimonials-scroll-forward 40s linear infinite;
+          animation-delay: 0.4s;
         }
 
         .testimonials-scroll-reverse:hover,
@@ -181,6 +189,6 @@ export default function TestimonialsSection() {
           animation-play-state: paused;
         }
       `}</style>
-    </div>
+    </section>
   );
 } 
