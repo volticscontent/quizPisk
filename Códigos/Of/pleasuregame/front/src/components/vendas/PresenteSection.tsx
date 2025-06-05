@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { trackPresenteCTA } from '@/services/tracking';
 
@@ -38,47 +37,27 @@ export default function PresenteSection() {
       {/* Primeiro bloco - Presente Perfeito */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative mb-32">
         <div className="text-center mb-12">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold text-white mb-12"
-          >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-12">
             O Presente Que Ninguém Vai Esquecer.
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-xl text-neutral-300 mb-8"
-          >
+          <p className="text-xl text-neutral-300 mb-8">
             Você pode enviar o app como uma surpresa:
-          </motion.p>
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto mb-12">
             {features.map((feature, index) => (
-              <motion.div
+              <div
                 key={feature.text}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 + 0.3 }}
                 className="flex items-center space-x-3 bg-gradient-to-r from-red-500/5 to-transparent p-4 rounded-xl border border-red-500/10"
               >
                 {feature.icon}
                 <span className="text-neutral-200">{feature.text}</span>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.6 }}
-          >
+          <div>
             <Link
               href="#planos"
               onClick={() => trackPresenteCTA('dar_presente')}
@@ -86,39 +65,22 @@ export default function PresenteSection() {
             >
               Quero Dar de Presente
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
 
       {/* Segundo bloco - Transição para Planos */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold text-white mb-6"
-          >
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Agora escolha como vocês querem jogar.
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-xl text-neutral-300 mb-12"
-          >
+          <p className="text-xl text-neutral-300 mb-12">
             Todos os modos, desafios e experiências estão disponíveis em planos pensados para cada tipo de casal.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-            className="relative"
-          >
+          <div className="relative">
             <div className="absolute -inset-1"></div>
             <Link
               href="#planos"
@@ -127,7 +89,7 @@ export default function PresenteSection() {
             >
               Ver Planos e Começar o Jogo
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
