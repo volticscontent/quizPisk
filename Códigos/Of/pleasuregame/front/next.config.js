@@ -119,7 +119,7 @@ const nextConfig = {
   },
 
   // Configurações do webpack para otimização
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     // Otimizações para produção
     if (!isServer) {
       config.resolve.fallback = {
@@ -141,7 +141,7 @@ const nextConfig = {
     // Definir variáveis globais para compatibilidade
     config.plugins = config.plugins || [];
     config.plugins.push(
-      new config.webpack.DefinePlugin({
+      new webpack.DefinePlugin({
         'typeof window': JSON.stringify('object'),
         'typeof self': JSON.stringify('undefined'),
       })
