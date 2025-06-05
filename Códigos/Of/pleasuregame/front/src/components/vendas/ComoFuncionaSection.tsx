@@ -1,18 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
+import React from 'react';
 import Link from 'next/link';
 import { trackComoFuncionaCTA, trackDesafiosCTA } from '@/services/tracking';
 
 const GameModeCard = ({ mode, index }: { mode: any; index: number }) => (
-  <motion.div
+  <div
     key={mode.title}
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ delay: index * 0.1 }}
     className="group relative bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 hover:border-red-500/30 transition-all duration-300 cursor-pointer"
     onClick={() => trackComoFuncionaCTA(mode.title)}
   >
@@ -29,7 +23,7 @@ const GameModeCard = ({ mode, index }: { mode: any; index: number }) => (
         </p>
       </div>
     </div>
-  </motion.div>
+  </div>
 );
 
 const challenges = [
@@ -224,19 +218,6 @@ const gameModes = [
 ];
 
 export default function ComoFuncionaSection() {
-  const [isAnimating, setIsAnimating] = useState(false);
-  
-  const { ref, inView } = useInView({
-    threshold: 0.1,
-    triggerOnce: true
-  });
-
-  useEffect(() => {
-    if (inView) {
-      setIsAnimating(true);
-    }
-  }, [inView]);
-
   // Dividir os jogos em duas linhas
   const firstRowGames = gameModes.slice(0, Math.ceil(gameModes.length / 2));
   const secondRowGames = gameModes.slice(Math.ceil(gameModes.length / 2));
@@ -253,12 +234,8 @@ export default function ComoFuncionaSection() {
         <div className="mb-24">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {challenges.map((challenge, index) => (
-              <motion.div
+              <div
                 key={challenge.question}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.2 }}
                 className="group"
               >
                 <div className={`h-full bg-gradient-to-b ${challenge.gradient} p-8 rounded-2xl border border-white/5 backdrop-blur-sm hover:border-red-500/20 transition-all duration-300`}>
@@ -269,7 +246,7 @@ export default function ComoFuncionaSection() {
                     </h3>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -291,94 +268,20 @@ export default function ComoFuncionaSection() {
           </h2>
           
           {/* Advertorial Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/10 to-red-500/10 border border-red-500/20"
-          >
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/10 to-red-500/10 border border-red-500/20">
             <span className="text-red-400 text-sm">
               Interface adaptada para casais hetero, LGBTQIA+ e não monogâmicos
             </span>
-          </motion.div>
+          </div>
         </div>
 
-        {/* Game Modes Carousel */}
-        <div ref={ref} className="h-[28rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden">
-          {/* Primeira linha de cards */}
-          <div 
-            className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]"
-          >
-            <ul className={`flex min-w-full shrink-0 gap-6 py-4 w-max flex-nowrap ${isAnimating ? 'animate-scroll-reverse' : ''}`}>
-              {firstRowGames.concat(firstRowGames).map((mode, index) => (
-                <li 
-                  key={`first-${mode.title}-${index}`}
-                  className="w-[300px] md:w-[350px] flex-shrink-0"
-                >
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: (index % firstRowGames.length) * 0.05 }}
-                  >
-                    <GameModeCard mode={mode} index={index} />
-                  </motion.div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Segunda linha de cards */}
-          <div 
-            className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]"
-          >
-            <ul className={`flex min-w-full shrink-0 gap-6 py-4 w-max flex-nowrap ${isAnimating ? 'animate-scroll-forward' : ''}`}>
-              {secondRowGames.concat(secondRowGames).map((mode, index) => (
-                <li 
-                  key={`second-${mode.title}-${index}`}
-                  className="w-[300px] md:w-[350px] flex-shrink-0"
-                >
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: (index % secondRowGames.length) * 0.05 }}
-                  >
-                    <GameModeCard mode={mode} index={index} />
-                  </motion.div>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Game Modes - Versão Simplificada */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+          {gameModes.map((mode, index) => (
+            <GameModeCard key={mode.title} mode={mode} index={index} />
+          ))}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes scroll-reverse {
-          from { transform: translateX(0); }
-          to { transform: translateX(calc(-50% - 1.5rem)); }
-        }
-
-        @keyframes scroll-forward {
-          from { transform: translateX(calc(-50% - 1.5rem)); }
-          to { transform: translateX(0); }
-        }
-
-        .animate-scroll-reverse {
-          animation: scroll-reverse 45s linear infinite;
-          animation-play-state: running;
-        }
-
-        .animate-scroll-forward {
-          animation: scroll-forward 40s linear infinite;
-          animation-play-state: running;
-        }
-
-        .animate-scroll-reverse:hover,
-        .animate-scroll-forward:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
     </section>
   );
 }
