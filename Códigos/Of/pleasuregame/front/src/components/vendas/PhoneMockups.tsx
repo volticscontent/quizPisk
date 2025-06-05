@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 
 export default function PhoneMockups() {
-  const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const mockupsRef = useRef<HTMLDivElement>(null);
   
   // Referências para os vídeos
@@ -13,27 +12,42 @@ export default function PhoneMockups() {
   const video3Ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(true);
-      
-      // Inicia os vídeos após o componente estar visível
-      setTimeout(() => {
-        const videos = [video1Ref.current, video2Ref.current, video3Ref.current];
-        videos.forEach((video, index) => {
-          if (video) {
-            video.play().catch(err => console.log(`Erro ao reproduzir vídeo ${index + 1}:`, err));
-          }
-        });
-      }, 500);
-    }, 800);
+    // Mounting imediato
+    setMounted(true);
+    
+    // Carrega vídeos imediatamente - sem delay
+    const videos = [video1Ref.current, video2Ref.current, video3Ref.current];
+    videos.forEach((video, index) => {
+      if (video) {
+        // Força carregamento imediato
+        video.load();
+        
+        // Tenta reproduzir assim que possível
+        const tryPlay = () => {
+          video.play().catch(err => {
+            console.log(`Vídeo ${index + 1} aguardando interação:`, err);
+            // Se falhar, tenta novamente quando o usuário interagir
+            document.addEventListener('click', () => {
+              video.play().catch(() => {});
+            }, { once: true });
+          });
+        };
 
-    return () => clearTimeout(timer);
+        // Se já pode reproduzir, reproduz imediatamente
+        if (video.readyState >= 3) {
+          tryPlay();
+        } else {
+          // Senão, aguarda estar pronto
+          video.addEventListener('canplay', tryPlay, { once: true });
+        }
+      }
+    });
   }, []);
 
   return (
     <div 
       ref={mockupsRef}
-      className={`relative lg:flex items-center w-full lg:w-1/2 justify-center transition-opacity duration-1000 h-[180px] md:h-[220px] lg:h-auto lg:mt-0 overflow-visible ${visible ? 'opacity-100' : 'opacity-0'}`}
+      className={`relative lg:flex items-center w-full lg:w-1/2 justify-center h-[180px] md:h-[220px] lg:h-auto lg:mt-0 overflow-visible transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
     >
       {/* Smartphone 1 - Esquerdo */}
       <div 
@@ -49,18 +63,16 @@ export default function PhoneMockups() {
           src="/images/mockup.webp"
         />
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
-          <div data-sentry-component="LazyLoadVideo" data-sentry-source-file="lazy-video.tsx">
-            <video 
-              ref={video1Ref}
-              preload="metadata" 
-              autoPlay 
-              loop 
-              muted
-              playsInline 
-              src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-01.webm" 
-              className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl"
-            />
-          </div>
+          <video 
+            ref={video1Ref}
+            preload="metadata"
+            autoPlay 
+            loop 
+            muted
+            playsInline
+            className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
+            src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-01.webm"
+          />
         </div>
       </div>
 
@@ -78,18 +90,16 @@ export default function PhoneMockups() {
           src="/images/mockup.webp"
         />
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
-          <div data-sentry-component="LazyLoadVideo" data-sentry-source-file="lazy-video.tsx">
-            <video 
-              ref={video2Ref}
-              preload="metadata" 
-              autoPlay 
-              loop 
-              muted
-              playsInline 
-              src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-02.webm" 
-              className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl"
-            />
-          </div>
+          <video 
+            ref={video2Ref}
+            preload="metadata"
+            autoPlay 
+            loop 
+            muted
+            playsInline
+            className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
+            src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEO-SITE-02.webm"
+          />
         </div>
       </div>
 
@@ -107,18 +117,16 @@ export default function PhoneMockups() {
           src="/images/mockup.webp"
         />
         <div className="relative w-[97%] h-[99%] rounded-2xl overflow-hidden cursor-not-allowed z-40">
-          <div data-sentry-component="LazyLoadVideo" data-sentry-source-file="lazy-video.tsx">
-            <video 
-              ref={video3Ref}
-              preload="metadata" 
-              autoPlay 
-              loop 
-              muted
-              playsInline 
-              src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEOS-SITE-03.webm" 
-              className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl"
-            />
-          </div>
+          <video 
+            ref={video3Ref}
+            preload="metadata"
+            autoPlay 
+            loop 
+            muted
+            playsInline
+            className="absolute top-0.5 left-0.5 lg:left-1 lg:top-2 rounded-md lg:rounded-3xl w-full h-full object-cover"
+            src="https://pub-9e19518e85994c27a69dd5b29e669dca.r2.dev/V%C3%8DDEOS-SITE-03.webm"
+          />
         </div>
       </div>
     </div>

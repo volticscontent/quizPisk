@@ -28,10 +28,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
-        <PixelManager />
+    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <head>
+        {/* Meta tags essenciais para mobile */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#000000" />
+      </head>
+      <body className="antialiased bg-black text-white min-h-screen">
         <AuthProvider>
+          <PixelManager />
+          <BannerPromocional />
           <BarraNavegacao />
           {children}
           <CookieConsent />

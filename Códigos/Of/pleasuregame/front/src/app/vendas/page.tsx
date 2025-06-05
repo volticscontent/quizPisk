@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import HeroSection from '@/components/vendas/HeroSection';
 
@@ -51,31 +51,58 @@ const PresenteSection = dynamic(() => import('@/components/vendas/PresenteSectio
 });
 
 export default function PaginaLanding() {
+  const [isFullyMounted, setIsFullyMounted] = useState(false);
+
+  useEffect(() => {
+    // Aguarda um pouco mais para garantir que todos os componentes estejam prontos
+    const timer = setTimeout(() => {
+      setIsFullyMounted(true);
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <main className="min-h-screen bg-black text-white w-full overflow-x-hidden">
-      {/* Hero Section */}
+      {/* Hero Section - sempre renderizado */}
       <HeroSection />
       
-      {/* Como funciona */}
-      <ComoFuncionaSection />
+      {/* Outros componentes só após montagem completa */}
+      {isFullyMounted && (
+        <>
+          {/* Como funciona */}
+          <ComoFuncionaSection />
 
-      {/* Valor */}
-      <ValorSection />
+          {/* Valor */}
+          <ValorSection />
 
-      {/* Depoimentos */}
-      <TestimonialsSection />
-      <div className="section-divider" />
+          {/* Depoimentos */}
+          <TestimonialsSection />
+          <div className="section-divider" />
 
-      {/* Presente */}
-      <PresenteSection />
+          {/* Presente */}
+          <PresenteSection />
+          
+          <PlansSection />
+          <div className="section-divider" />
+
+          <FaqSection />
+          <div className="section-divider" />
+          
+          {/* Footer */}
+          <FooterSection />
+        </>
+      )}
       
-      <PlansSection />
-      <div className="section-divider" />
-
-      <FaqSection />
-      <div className="section-divider" />
-      {/* Footer */}
-      <FooterSection />
+      {/* Loading state para os componentes que ainda não carregaram */}
+      {!isFullyMounted && (
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-4"></div>
+            <p className="text-sm text-neutral-400">Preparando experiência...</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 } 

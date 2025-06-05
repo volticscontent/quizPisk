@@ -55,13 +55,9 @@ const moreTestimonials = [
 ];
 
 export default function TestimonialsSection() {
+  const [ref, inView] = useInView({ threshold: 0.1, triggerOnce: true });
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  
-  const { ref, inView } = useInView({
-    threshold: 0.1,
-    triggerOnce: true
-  });
 
   useEffect(() => {
     setIsMounted(true);
@@ -69,7 +65,10 @@ export default function TestimonialsSection() {
 
   useEffect(() => {
     if (inView && isMounted) {
-      setIsAnimating(true);
+      const timer = setTimeout(() => {
+        setIsAnimating(true);
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [inView, isMounted]);
 
