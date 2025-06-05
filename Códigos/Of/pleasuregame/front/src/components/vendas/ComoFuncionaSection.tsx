@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { trackComoFuncionaCTA, trackDesafiosCTA } from '@/services/tracking';
 
@@ -151,6 +151,12 @@ const gameModes = [
 ];
 
 export default function ComoFuncionaSection() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Dividir os jogos em duas linhas
   const firstRowGames = gameModes.slice(0, Math.ceil(gameModes.length / 2));
   const secondRowGames = gameModes.slice(Math.ceil(gameModes.length / 2));
@@ -208,49 +214,64 @@ export default function ComoFuncionaSection() {
           </div>
         </div>
 
-        {/* Game Modes Carousel - Versão Simples */}
-        <div className="h-[28rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden mt-12">
-          {/* Primeira linha de cards */}
-          <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-            <div className="flex gap-6 py-4 w-max animate-scroll-reverse">
-              {firstRowGames.concat(firstRowGames).map((mode, index) => (
-                <GameModeCard key={`first-${mode.title}-${index}`} mode={mode} index={index} />
-              ))}
+        {/* Game Modes Carousel - Versão com controle de hidratação */}
+        {isClient && (
+          <div className="h-[28rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden mt-12">
+            {/* Primeira linha de cards */}
+            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
+              <div className="flex gap-6 py-4 w-max carousel-scroll-reverse">
+                {firstRowGames.concat(firstRowGames).map((mode, index) => (
+                  <GameModeCard key={`first-${mode.title}-${index}`} mode={mode} index={index} />
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Segunda linha de cards */}
-          <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
-            <div className="flex gap-6 py-4 w-max animate-scroll-forward">
-              {secondRowGames.concat(secondRowGames).map((mode, index) => (
-                <GameModeCard key={`second-${mode.title}-${index}`} mode={mode} index={index} />
+            {/* Segunda linha de cards */}
+            <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
+              <div className="flex gap-6 py-4 w-max carousel-scroll-forward">
+                {secondRowGames.concat(secondRowGames).map((mode, index) => (
+                  <GameModeCard key={`second-${mode.title}-${index}`} mode={mode} index={index} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fallback para SSR */}
+        {!isClient && (
+          <div className="h-[28rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden mt-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
+              {gameModes.slice(0, 6).map((mode, index) => (
+                <GameModeCard key={`fallback-${mode.title}`} mode={mode} index={index} />
               ))}
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style jsx>{`
         @keyframes scroll-reverse {
-          from { transform: translateX(0); }
-          to { transform: translateX(calc(-50% - 1.5rem)); }
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-50% - 1.5rem)); }
         }
 
         @keyframes scroll-forward {
-          from { transform: translateX(calc(-50% - 1.5rem)); }
-          to { transform: translateX(0); }
+          0% { transform: translateX(calc(-50% - 1.5rem)); }
+          100% { transform: translateX(0); }
         }
 
-        .animate-scroll-reverse {
+        .carousel-scroll-reverse {
           animation: scroll-reverse 45s linear infinite;
+          animation-delay: 0.1s;
         }
 
-        .animate-scroll-forward {
+        .carousel-scroll-forward {
           animation: scroll-forward 40s linear infinite;
+          animation-delay: 0.2s;
         }
 
-        .animate-scroll-reverse:hover,
-        .animate-scroll-forward:hover {
+        .carousel-scroll-reverse:hover,
+        .carousel-scroll-forward:hover {
           animation-play-state: paused;
         }
       `}</style>
