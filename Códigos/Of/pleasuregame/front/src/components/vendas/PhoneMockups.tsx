@@ -1,53 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 export default function PhoneMockups() {
-  const [mounted, setMounted] = useState(false);
-  const mockupsRef = useRef<HTMLDivElement>(null);
-  
   // Referências para os vídeos
   const video1Ref = useRef<HTMLVideoElement>(null);
   const video2Ref = useRef<HTMLVideoElement>(null);
   const video3Ref = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    // Mounting imediato
-    setMounted(true);
-    
-    // Carrega vídeos imediatamente - sem delay
-    const videos = [video1Ref.current, video2Ref.current, video3Ref.current];
-    videos.forEach((video, index) => {
-      if (video) {
-        // Força carregamento imediato
-        video.load();
-        
-        // Tenta reproduzir assim que possível
-        const tryPlay = () => {
-          video.play().catch(err => {
-            console.log(`Vídeo ${index + 1} aguardando interação:`, err);
-            // Se falhar, tenta novamente quando o usuário interagir
-            document.addEventListener('click', () => {
-              video.play().catch(() => {});
-            }, { once: true });
-          });
-        };
-
-        // Se já pode reproduzir, reproduz imediatamente
-        if (video.readyState >= 3) {
-          tryPlay();
-        } else {
-          // Senão, aguarda estar pronto
-          video.addEventListener('canplay', tryPlay, { once: true });
-        }
-      }
-    });
-  }, []);
-
   return (
     <div 
-      ref={mockupsRef}
-      className={`relative lg:flex items-center w-full lg:w-1/2 justify-center h-[180px] md:h-[220px] lg:h-auto lg:mt-0 overflow-visible transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+      className="relative lg:flex items-center w-full lg:w-1/2 justify-center h-[180px] md:h-[220px] lg:h-auto lg:mt-0 overflow-visible"
     >
       {/* Smartphone 1 - Esquerdo */}
       <div 
