@@ -7,7 +7,7 @@ import { trackComoFuncionaCTA, trackDesafiosCTA } from '@/services/tracking';
 const GameModeCard = ({ mode, index }: { mode: any; index: number }) => (
   <div
     key={mode.title}
-    className="group relative bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 hover:border-red-500/30 transition-all duration-300 cursor-pointer"
+    className="group relative bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 hover:border-red-500/30 transition-all duration-300 cursor-pointer min-w-[300px] md:min-w-[350px] flex-shrink-0"
     onClick={() => trackComoFuncionaCTA(mode.title)}
   >
     <div className="flex items-start space-x-4">
@@ -275,13 +275,52 @@ export default function ComoFuncionaSection() {
           </div>
         </div>
 
-        {/* Game Modes - Versão Simplificada */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-          {gameModes.map((mode, index) => (
-            <GameModeCard key={mode.title} mode={mode} index={index} />
-          ))}
+        {/* Game Modes Carousel - Versão Simples */}
+        <div className="h-[28rem] rounded-md flex flex-col antialiased items-center justify-center relative overflow-hidden mt-12">
+          {/* Primeira linha de cards */}
+          <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
+            <div className="flex gap-6 py-4 w-max animate-scroll-reverse">
+              {firstRowGames.concat(firstRowGames).map((mode, index) => (
+                <GameModeCard key={`first-${mode.title}-${index}`} mode={mode} index={index} />
+              ))}
+            </div>
+          </div>
+
+          {/* Segunda linha de cards */}
+          <div className="scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]">
+            <div className="flex gap-6 py-4 w-max animate-scroll-forward">
+              {secondRowGames.concat(secondRowGames).map((mode, index) => (
+                <GameModeCard key={`second-${mode.title}-${index}`} mode={mode} index={index} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes scroll-reverse {
+          from { transform: translateX(0); }
+          to { transform: translateX(calc(-50% - 1.5rem)); }
+        }
+
+        @keyframes scroll-forward {
+          from { transform: translateX(calc(-50% - 1.5rem)); }
+          to { transform: translateX(0); }
+        }
+
+        .animate-scroll-reverse {
+          animation: scroll-reverse 45s linear infinite;
+        }
+
+        .animate-scroll-forward {
+          animation: scroll-forward 40s linear infinite;
+        }
+
+        .animate-scroll-reverse:hover,
+        .animate-scroll-forward:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
     </section>
   );
 }
