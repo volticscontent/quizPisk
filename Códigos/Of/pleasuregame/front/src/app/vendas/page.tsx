@@ -1,61 +1,41 @@
 "use client";
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import HeroSection from '@/components/vendas/HeroSection';
-
-// Dynamic imports SIMPLES sem loading complexo para evitar problemas de hidratação
-const ComoFuncionaSection = dynamic(() => import('@/components/vendas/ComoFuncionaSection'), {
-  ssr: false,
-  loading: () => <div />
-});
-
-const TestimonialsSection = dynamic(() => import('@/components/vendas/TestimonialsSection'), {
-  ssr: false,
-  loading: () => <div />
-});
-
-const PlansSection = dynamic(() => import('@/components/vendas/PlansSection'), {
-  ssr: false,
-  loading: () => <div />
-});
-
-const FaqSection = dynamic(() => import('@/components/vendas/FaqSection'), {
-  ssr: false,
-  loading: () => <div />
-});
-
-const ValorSection = dynamic(() => import('@/components/vendas/ValorSection'), {
-  ssr: false,
-  loading: () => <div />
-});
-
-const PresenteSection = dynamic(() => import('@/components/vendas/PresenteSection'), {
-  ssr: false,
-  loading: () => <div />
-});
-
-const FooterSection = dynamic(() => import('@/components/common/FooterSection'), {
-  ssr: false,
-  loading: () => <div />
-});
+import ComoFuncionaSection from '@/components/vendas/ComoFuncionaSection';
+import FooterSection from '@/components/common/FooterSection';
+import TestimonialsSection from '@/components/vendas/TestimonialsSection';
+import PlansSection from '@/components/vendas/PlansSection';
+import FaqSection from '@/components/vendas/FaqSection';
+import ValorSection from '@/components/vendas/ValorSection';
+import PresenteSection from '@/components/vendas/PresenteSection';
 
 export default function PaginaLanding() {
   return (
     <main className="min-h-screen bg-black text-white w-full overflow-x-hidden">
-      {/* Hero Section - renderizado imediatamente sem problemas */}
+      {/* Hero Section */}
       <HeroSection />
       
-      {/* Componentes com dynamic imports para evitar problemas de hydratação */}
+      {/* Como funciona */}
       <ComoFuncionaSection />
+
+      {/* Valor */}
       <ValorSection />
+
+      {/* Depoimentos */}
       <TestimonialsSection />
       <div className="section-divider" />
+
+      {/* Presente */}
       <PresenteSection />
+      
       <PlansSection />
       <div className="section-divider" />
+
       <FaqSection />
       <div className="section-divider" />
+      
+      {/* Footer */}
       <FooterSection />
     </main>
   );
