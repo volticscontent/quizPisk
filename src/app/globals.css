@@ -6,7 +6,7 @@
   --orange: #2dd33b;
   --orange-hover: #4ae52b;
   --green-glow: #00ff88;
-  --progress-color: #FA6B05;
+  --progress-color: #00ff88;
   --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   --easing-elastic: cubic-bezier(0.68, 0, 0.32, 1.15);
@@ -217,7 +217,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 40px 40px 40px;
+  padding: 120px 40px 40px 40px; /* Top padding maior para não sobrepor a logo */
   min-height: calc(100vh - 200px);
 }
 
@@ -225,6 +225,8 @@ body {
   width: 100%;
   max-width: 775px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1; /* Garante que fica abaixo da logo */
 }
 
 .spacer-container-main {
@@ -233,6 +235,7 @@ body {
 
 .question-wrapper-main {
   width: 100%;
+  text-align: center; /* Centraliza todo o conteúdo */
 }
 
 /* Header Principal - Mais compacto */
@@ -275,8 +278,14 @@ body {
   font-weight: 700;
   font-family: var(--font-maven-pro), sans-serif;
   margin-right: 8px;
-  transform: scale(0);
-  opacity: 0;
+  display: inline-block;
+  text-shadow: 0 2px 8px rgba(45, 211, 59, 0.3);
+  transform: translateY(-1px);
+  animation: numberGlow 3s ease-in-out infinite;
+}
+
+.question-number.number-bounce {
+  animation: numberBounce 0.8s var(--easing-bounce) forwards, numberGlow 3s ease-in-out infinite 0.8s;
 }
 
 
@@ -1033,10 +1042,6 @@ body {
   .description-text-main {
     font-size: 16px;
   }
-
-  .geometric-bg {
-    padding-bottom: 140px;
-  }
 }
 
 /* Keyframes para animações */
@@ -1788,8 +1793,8 @@ body {
   }
 
   .ButtonWrapper-sc-__sc-1qu8p4z-0.eTknZ {
-    width: 520px;
-    min-width: 520px;
+    width: 480px;
+    min-width: 480px;
     min-height: 56px;
   }
 
@@ -1816,9 +1821,10 @@ body {
   }
 
   .ButtonWrapper-sc-__sc-1qu8p4z-0.eTknZ {
-    width: 400px;
-    min-width: 400px;
+    width: 340px;
+    min-width: 340px;
     min-height: 48px;
+    border-radius: 8px;
   }
 
   .FlexWrapper-sc-__sc-1qu8p4z-2.bnIfYq {

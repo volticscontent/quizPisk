@@ -4,7 +4,7 @@
  * Este código deve ser colado no Google Apps Script para integrar
  * o formulário PiscaForm com Google Sheets
  * 
- * Instruções de uso estão no README gerado
+ * Baseado na documentação oficial: https://developers.google.com/workspace/sheets/api/quickstart/apps-script
  */
 
 // 🔧 CONFIGURAÇÕES - EDITE AQUI
@@ -17,31 +17,49 @@ const SPREADSHEET_ID = '1FXYEi0kJhnS1ZlErO_tqO5oVhYWGJN-GwrvngPblJt8'; // ID da 
 function doPost(e) {
   try {
     console.log('📥 Recebendo dados do formulário...');
+    console.log('📋 Parâmetros recebidos:', e);
     
-    // Parse dos dados recebidos
-    const data = JSON.parse(e.postData.contents);
-    console.log('📋 Dados recebidos:', data);
+    let data;
+    
+    // Tenta diferentes formas de extrair os dados
+    if (e.postData && e.postData.contents) {
+      console.log('📄 Dados brutos:', e.postData.contents);
+      data = JSON.parse(e.postData.contents);
+    } else if (e.parameter) {
+      console.log('📊 Usando parâmetros:', e.parameter);
+      data = e.parameter;
+    } else if (e.parameters) {
+      console.log('📋 Usando parameters:', e.parameters);
+      data = e.parameters;
+    } else {
+      throw new Error('Nenhum dado encontrado na requisição');
+    }
+    
+    console.log('✅ Dados processados:', data);
     
     // Adiciona os dados à planilha
     const result = addToSheet(data);
     
-    // Retorna resposta de sucesso
+    // Retorna resposta de sucesso (sem setHeaders para compatibilidade)
     return ContentService
       .createTextOutput(JSON.stringify({ 
         success: true, 
         message: 'Dados salvos com sucesso!',
-        row: result.row 
+        row: result.row,
+        timestamp: new Date().toISOString()
       }))
       .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
     console.error('❌ Erro no doPost:', error);
     
-    // Retorna resposta de erro
+    // Retorna resposta de erro (sem setHeaders para compatibilidade)
     return ContentService
       .createTextOutput(JSON.stringify({ 
         success: false, 
-        message: 'Erro ao salvar dados: ' + error.toString() 
+        message: 'Erro ao salvar dados: ' + error.toString(),
+        error: error.name,
+        timestamp: new Date().toISOString()
       }))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -54,7 +72,9 @@ function doGet(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ 
       message: 'PiscaForm Apps Script está funcionando!',
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString(),
+      version: '3.0 - Corrigido',
+      url: 'AKfycbz_OGpFllYdoyUjVBf7f4lr7uYqg6P4SSMZk0nWZNOdR0ss9UBWRc9SC04jCy7QWzNG'
     }))
     .setMimeType(ContentService.MimeType.JSON);
 }
@@ -64,29 +84,22 @@ function doGet(e) {
  */
 function addToSheet(data) {
   try {
-    // Obtém a planilha
-    let spreadsheet;
-    if (SPREADSHEET_ID && SPREADSHEET_ID !== 'SUA_PLANILHA_ID_AQUI') {
-      spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    } else {
-      spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    
-    // Obtém ou cria a aba
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
     let sheet = spreadsheet.getSheetByName(SHEET_NAME);
+    
     if (!sheet) {
       sheet = spreadsheet.insertSheet(SHEET_NAME);
-      setupHeaders(sheet);
     }
     
-    // Verifica se já tem cabeçalhos
+    // Adiciona cabeçalhos se a planilha estiver vazia
     if (sheet.getLastRow() === 0) {
-      setupHeaders(sheet);
+      const headers = ['Data/Hora', 'Nome', 'WhatsApp', 'E-mail', 'Instagram', 'Momento', 'Vendeu Fora', 'Faturamento', 'Caixa', 'Problema', 'Área Ajuda', 'Sócio', 'Por que escolher', 'Compromisso'];
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }
     
-    // Prepara os dados para inserção
+    // Adiciona nova linha com dados
     const rowData = [
-      new Date(), // Data/Hora
+      new Date(),
       data.name || '',
       data.phone || '',
       data.email || '',
@@ -99,65 +112,19 @@ function addToSheet(data) {
       data.areaAjuda || '',
       data.possuiSocio || '',
       data.porQueEscolher || '',
-      data.compromisso || '',
-      data.submittedAt || '',
-      data.timestamp || ''
+      data.compromisso || ''
     ];
     
-    // Adiciona nova linha
     const nextRow = sheet.getLastRow() + 1;
     sheet.getRange(nextRow, 1, 1, rowData.length).setValues([rowData]);
     
     console.log('✅ Dados adicionados na linha:', nextRow);
-    
-    return { 
-      success: true, 
-      row: nextRow,
-      data: rowData 
-    };
+    return { success: true, row: nextRow };
     
   } catch (error) {
-    console.error('❌ Erro ao adicionar à planilha:', error);
+    console.error('❌ Erro:', error);
     throw error;
   }
-}
-
-/**
- * Configura os cabeçalhos da planilha
- */
-function setupHeaders(sheet) {
-  const headers = [
-    'Data/Hora',
-    'Nome',
-    'WhatsApp',
-    'E-mail',
-    'Instagram',
-    'Momento Atual',
-    'Vendeu Fora do Brasil',
-    'Faturamento Acumulado',
-    'Caixa Disponível',
-    'Problema Principal',
-    'Área de Ajuda',
-    'Possui Sócio',
-    'Por que escolher você',
-    'Compromisso',
-    'Enviado em',
-    'Timestamp'
-  ];
-  
-  // Adiciona cabeçalhos
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  
-  // Formata cabeçalhos
-  const headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setFontWeight('bold');
-  headerRange.setBackground('#4285f4');
-  headerRange.setFontColor('#ffffff');
-  
-  // Ajusta largura das colunas
-  sheet.autoResizeColumns(1, headers.length);
-  
-  console.log('📋 Cabeçalhos configurados');
 }
 
 /**
@@ -177,9 +144,7 @@ function testFunction() {
     areaAjuda: 'E',
     possuiSocio: 'B',
     porQueEscolher: 'Sou comprometido e quero escalar meu negócio no mercado internacional.',
-    compromisso: 'A',
-    submittedAt: new Date().toLocaleString('pt-BR'),
-    timestamp: new Date().toISOString()
+    compromisso: 'A'
   };
   
   const result = addToSheet(testData);
@@ -207,5 +172,54 @@ function getAllData() {
   } catch (error) {
     console.error('❌ Erro ao obter dados:', error);
     return [];
+  }
+}
+
+/**
+ * Função para testar autorização (NOVA - v3.0)
+ */
+function testAuthorization() {
+  console.log('🔐 Testando autorização...');
+  
+  try {
+    // Testa acesso à planilha
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    console.log('✅ Planilha acessada:', spreadsheet.getName());
+    
+    // Testa função de adição
+    const testData = {
+      name: 'Teste Autorização',
+      phone: '+5511999999999',
+      email: 'teste@auth.com',
+      instagram: 'teste_auth',
+      moment: 'A',
+      vendeuFora: 'A',
+      faturamento: 'B',
+      caixaDisponivel: 'C',
+      problemaPrincipal: 'A',
+      areaAjuda: 'E',
+      possuiSocio: 'B',
+      porQueEscolher: 'Teste de autorização do Google Apps Script para PiscaForm.',
+      compromisso: 'A',
+      timestamp: new Date().toISOString(),
+      submittedAt: new Date().toLocaleString('pt-BR')
+    };
+    
+    const result = addToSheet(testData);
+    console.log('✅ Autorização funcionando! Resultado:', result);
+    console.log('📋 Verifique a planilha para confirmar que os dados foram salvos');
+    
+    return { 
+      success: true, 
+      message: 'Autorização OK!', 
+      result: result 
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro de autorização:', error);
+    return { 
+      success: false, 
+      message: 'Erro de autorização: ' + error.toString() 
+    };
   }
 } 

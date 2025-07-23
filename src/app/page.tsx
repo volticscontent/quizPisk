@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import axios from 'axios';
 
 type QuizStep = 'welcome' | 'name' | 'whatsapp' | 'email' | 'instagram' | 'momento' | 'vendeu_fora' | 'faturamento' | 'caixa_disponivel' | 'problema_principal' | 'area_ajuda' | 'socio' | 'por_que_escolher' | 'compromisso' | 'finished';
 
@@ -88,8 +89,108 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'partial'>('idle');
 
-  // Apps Script URL - Substitua pela sua URL quando criar o script
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcFcEzrOZrWu8L7Gojab27UMKH0trk43hZP10Kxzkpp3tCaIEtX2hl9NcyVbYCSXMh/exec';
+  // Apps Script URL - NOVA URL ATUALIZADA (v3.0 - Corrigido)
+  // URL corrigida sem setHeaders para compatibilidade
+  // Configuração: Versão 2 em 23 de jul. de 2025, 14:52 - Executar como: gustavosales99999@gmail.com
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_OGpFllYdoyUjVBf7f4lr7uYqg6P4SSMZk0nWZNOdR0ss9UBWRc9SC04jCy7QWzNG/exec';
+
+  // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
+  const testAppsScriptURL = async () => {
+    console.log('🧪 Testando conexão com Apps Script...');
+    console.log('📡 URL:', APPS_SCRIPT_URL);
+    console.log('⚡ Status: Verificando se o deployment está correto...');
+    
+    try {
+      // Teste 1: GET request simples para verificar se o Apps Script responde
+      console.log('🔍 Teste 1: Verificando se o Apps Script está ativo...');
+      const response = await fetch(APPS_SCRIPT_URL + '?test=true', {
+        method: 'GET',
+        mode: 'no-cors'
+      });
+      console.log('✅ Apps Script respondeu (GET):', response.type);
+      
+      // Teste 2: POST request com dados de teste para verificar salvamento
+      console.log('🔍 Teste 2: Testando envio de dados...');
+      const testData = {
+        name: 'Teste Conectividade PiscaForm',
+        email: 'teste@piscaform.com',
+        phone: '+5511999999999',
+        instagram: 'teste_piscaform',
+        moment: 'A',
+        vendeuFora: 'A',
+        faturamento: 'B',
+        caixaDisponivel: 'C',
+        problemaPrincipal: 'A',
+        areaAjuda: 'E',
+        possuiSocio: 'B',
+        porQueEscolher: 'Este é um teste automático do sistema PiscaForm para verificar a conectividade com Google Sheets.',
+        compromisso: 'A',
+        timestamp: new Date().toISOString(),
+        submittedAt: new Date().toLocaleString('pt-BR'),
+        isTest: true
+      };
+
+      const postResponse = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testData),
+        mode: 'no-cors',
+      });
+      
+      console.log('✅ Dados de teste enviados:', postResponse.type);
+      console.log('📋 Dados de teste enviados:', testData);
+      
+      // Teste 3: Verificar resposta com CORS (se possível)
+      try {
+        console.log('🔍 Teste 3: Tentando capturar resposta do servidor...');
+        const corsResponse = await fetch(APPS_SCRIPT_URL, {
+          method: 'GET',
+          mode: 'cors'
+        });
+        
+        if (corsResponse.ok) {
+          const data = await corsResponse.json();
+          console.log('📋 Resposta do Apps Script:', data);
+          
+          if (data.message && data.message.includes('funcionando')) {
+            console.log('🎉 SUCESSO! Apps Script está configurado corretamente!');
+          }
+        }
+      } catch (corsError) {
+        console.log('ℹ️ CORS bloqueado (normal), mas o Apps Script deve estar funcionando');
+        console.log('📝 Verifique sua planilha Google para confirmar se os dados de teste apareceram');
+      }
+      
+      console.log('');
+      console.log('📊 PRÓXIMOS PASSOS:');
+      console.log('1. ✅ Verifique sua planilha Google Sheets');
+      console.log('2. ✅ Procure por uma linha com "Teste Conectividade PiscaForm"');
+      console.log('3. ✅ Se os dados apareceram, a integração está funcionando!');
+      console.log('4. ⚠️ Se não apareceram, siga o guia GOOGLE_APPS_SCRIPT_401_FIX.md');
+      console.log('');
+      
+    } catch (error) {
+      console.error('❌ Erro ao testar Apps Script:', error);
+      console.log('');
+      console.log('🔧 SOLUÇÕES POSSÍVEIS:');
+      console.log('1. 🔄 Recriar o deployment no Google Apps Script');
+      console.log('2. ⚙️ Verificar permissões: "Executar como: Eu" e "Acesso: Qualquer pessoa"');
+      console.log('3. 📝 Confirmar que o código do apps-script.js foi colado corretamente');
+      console.log('4. 🔗 Atualizar a URL neste arquivo com a nova URL do deployment');
+      console.log('5. 📋 Verificar se a planilha tem as permissões corretas');
+    }
+  };
+
+  // Chama o teste automaticamente em desenvolvimento
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      setTimeout(() => {
+        testAppsScriptURL();
+      }, 2000);
+    }
+  }, []);
 
   // Função para salvar dados no localStorage
   const saveToLocalStorage = () => {
@@ -147,45 +248,127 @@ export default function Home() {
       return false;
     }
 
+    console.log('📤 Enviando dados para Google Sheets...', formData);
+    console.log('🔗 URL utilizada:', APPS_SCRIPT_URL);
+
+    // Método 1: Tentar com fetch + no-cors (mais compatível para CORS)
     try {
-      console.log('📤 Enviando dados para Google Sheets...', formData);
+      console.log('🔄 Tentativa 1: fetch com no-cors (método principal)...');
       
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/plain',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
         mode: 'no-cors',
-        redirect: 'follow'
+        credentials: 'omit',
+        cache: 'no-cache',
       });
 
-      // Com mode: 'no-cors', não conseguimos ler a resposta,
-      // mas se chegou até aqui, provavelmente foi enviado
-      console.log('✅ Dados enviados para Google Sheets! Status:', response.type);
-      
-      // Simula uma verificação adicional tentando novamente com modo cors
-      // para tentar capturar alguma informação
-      setTimeout(async () => {
-        try {
-          await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({...formData, verify: true}),
-          });
-          console.log('✅ Verificação adicional enviada');
-        } catch (e) {
-          console.log('ℹ️ Verificação adicional (normal falhar por CORS)');
-        }
-      }, 1000);
-      
+      console.log('✅ Dados enviados com fetch no-cors! Tipo:', response.type);
+      console.log('📊 Status da resposta:', response.status || 'opaque');
       return true;
-    } catch (error) {
-      console.error('❌ Erro ao enviar para Google Sheets:', error);
-      return false;
+      
+    } catch (fetchError) {
+      console.error('❌ Erro com fetch no-cors:', fetchError);
     }
+
+    // Método 2: Tentar envio via formulário HTML (contorna CORS completamente)
+    try {
+      console.log('🔄 Tentativa 2: Formulário HTML (contorna CORS)...');
+      
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = APPS_SCRIPT_URL;
+      form.target = '_blank';
+      form.style.display = 'none';
+
+      // Adiciona os dados como campos ocultos
+      Object.entries(formData).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+      
+      // Remove o formulário após envio
+      setTimeout(() => {
+        document.body.removeChild(form);
+      }, 1000);
+
+      console.log('✅ Formulário enviado com sucesso!');
+      return true;
+      
+    } catch (formError) {
+      console.error('❌ Erro com formulário:', formError);
+    }
+
+    // Método 3: Tentar com Axios (se disponível)
+    try {
+      console.log('🔄 Tentativa 3: Axios...');
+      
+      const response = await axios.post(APPS_SCRIPT_URL, formData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
+        withCredentials: false,
+      });
+
+      console.log('✅ Dados enviados com Axios! Status:', response.status);
+      return true;
+      
+    } catch (axiosError: unknown) {
+      console.error('❌ Erro com Axios:', axiosError);
+      
+      // Se for erro 401, pode ser problema de autorização no Apps Script
+      if (axiosError && typeof axiosError === 'object' && 'response' in axiosError) {
+        const error = axiosError as { response?: { status?: number } };
+        if (error.response?.status === 401) {
+          console.error('🔐 ERRO 401: Apps Script não autorizado!');
+          console.error('📋 Soluções:');
+          console.error('   1. Execute testAuthorization() no Google Apps Script');
+          console.error('   2. Autorize todas as permissões solicitadas');
+          console.error('   3. Verifique se o deployment está correto');
+        }
+      }
+    }
+
+    // Método 4: Tentar com fetch cors (última tentativa)
+    try {
+      console.log('🔄 Tentativa 4: fetch com cors...');
+      
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+        mode: 'cors',
+      });
+
+      if (response.ok) {
+        console.log('✅ Dados enviados com fetch cors! Status:', response.status);
+        return true;
+      } else {
+        console.warn('⚠️ Resposta não ok:', response.status);
+      }
+      
+    } catch (corsError) {
+      console.error('❌ Erro com fetch cors:', corsError);
+    }
+
+    console.error('❌ Todas as tentativas falharam');
+    console.error('🔧 Verifique:');
+    console.error('   1. Se o Google Apps Script foi autorizado');
+    console.error('   2. Se a URL está correta');
+    console.error('   3. Se o deployment está ativo');
+    return false;
   };
 
   // Função para finalizar e enviar dados
@@ -198,17 +381,32 @@ export default function Home() {
       const formData = saveToLocalStorage();
       
       if (formData) {
+        console.log('💾 Dados salvos localmente, tentando enviar...');
+        
         // Tenta enviar para Google Sheets
         const sent = await sendToGoogleSheets(formData);
         
         if (sent) {
           console.log('✅ Quiz finalizado e enviado com sucesso!');
           setSubmitStatus('success');
+          
+          // Opcional: mostrar notificação de sucesso
+          if (typeof window !== 'undefined' && 'Notification' in window) {
+            try {
+              new Notification('PiscaForm', {
+                body: 'Seus dados foram enviados com sucesso!',
+                icon: '/lgSemFundo.png'
+              });
+            } catch (e) {
+              console.log('Notificação não disponível');
+            }
+          }
         } else {
           console.log('⚠️ Quiz salvo localmente, mas não foi possível enviar para Google Sheets');
           setSubmitStatus('partial');
         }
       } else {
+        console.error('❌ Erro ao salvar dados localmente');
         setSubmitStatus('error');
       }
     } catch (error) {
@@ -253,23 +451,11 @@ export default function Home() {
     { id: 'C', text: 'Vendo regularmente' },
   ];
 
-  const faturamentoOptions = [
-    { id: 'A', text: 'Ainda não faturei' },
-    { id: 'B', text: 'Até R$5.000' },
-    { id: 'C', text: 'De R$5.000 a R$50.000' },
-    { id: 'D', text: 'De R$50.000 a R$100.000' },
-    { id: 'E', text: 'De R$100.000 a R$500.000' },
-    { id: 'F', text: 'De R$500.000 a R$1M' },
-    { id: 'G', text: 'Acima de R$1M' },
-  ];
-
   const caixaOptions = [
     { id: 'A', text: 'Menos de R$5.000' },
     { id: 'B', text: 'De R$5.000 a R$7.000' },
     { id: 'C', text: 'De R$7.000 a R$10.000' },
     { id: 'D', text: 'De R$10.000 a R$20.000' },
-    { id: 'E', text: 'De R$20.000 a R$50.000' },
-    { id: 'F', text: 'Acima de R$50.000' },
   ];
 
   const problemaOptions = [
@@ -656,7 +842,7 @@ export default function Home() {
         }
         break;
       case 'faturamento':
-        if (faturamento) {
+        if (faturamento.trim()) {
           nextStep();
         }
         break;
@@ -714,7 +900,7 @@ export default function Home() {
       case 'instagram': return !instagram.trim();
       case 'momento': return !selectedMoment;
       case 'vendeu_fora': return !vendeuFora;
-      case 'faturamento': return !faturamento;
+      case 'faturamento': return !faturamento.trim();
       case 'caixa_disponivel': return !caixaDisponivel;
       case 'problema_principal': return !problemaPrincipal;
       case 'area_ajuda': return !areaAjuda;
@@ -785,7 +971,7 @@ export default function Home() {
         <div className={`floating-currency currency-6 ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.7s' }}>₿</div>
         
         {/* Header com logo */}
-        <header className={`absolute top-4 left-4 z-10 ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.1s' }}>
+        <header className={`absolute top-4 left-4 z-50 ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center">
             <Image src="/lgSemFundo.png" alt="Logo" width={65} height={65} priority />
           </div>
@@ -888,10 +1074,11 @@ export default function Home() {
                 {currentStep === 'faturamento' && (
                   <FaturamentoContent 
                     elementsVisible={contentVisible}
-                    optionsVisible={optionsVisible}
                     faturamento={faturamento}
                     setFaturamento={setFaturamento}
-                    faturamentoOptions={faturamentoOptions}
+                    inputFocused={inputFocused}
+                    setInputFocused={setInputFocused}
+                    handleKeyPress={handleKeyPress}
                   />
                 )}
 
@@ -976,7 +1163,6 @@ export default function Home() {
             <div color="#000000" className="persistent-footercomponent__TransparentBackground-sc-171bwtp-1 cgqYMs"></div>
             <div className="AnimateStyled-sc-__sc-nw4u3g-0 jPHXjX" data-qa="animate">
               <div className="persistent-footercomponent__ButtonsWrapper-sc-171bwtp-3 bYGfZr">
-                <div></div>
                 <button 
                   data-qa="ok-button-visible-deep-purple-ok-button-visible" 
                   className={`ButtonWrapper-sc-__sc-1qu8p4z-0 eTknZ ${isButtonPressed ? 'button-pressed' : ''} ${isButtonDisabled() ? 'button-disabled' : ''}`}
@@ -1043,7 +1229,7 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">1.</span>Qual é o seu nome?
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>1.</span>Qual é o seu nome?
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Vamos começar com o básico. Como podemos te chamar?
@@ -1090,7 +1276,7 @@ function WhatsAppContent({ elementsVisible, name, phone, setPhone, countryCode, 
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">2.</span>Prazer, {name || 'Pedro'}! Qual é o seu número de WhatsApp?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>2.</span>Prazer, {name || 'Pedro'}! Qual é o seu número de WhatsApp?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Vamos precisar entrar em contato com você
@@ -1167,7 +1353,7 @@ function EmailContent({ elementsVisible, email, setEmail, inputFocused, setInput
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">3.</span>Agora insira seu e-mail*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>3.</span>Agora insira seu e-mail*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Digite seu melhor e-mail para contato
@@ -1211,7 +1397,7 @@ function InstagramContent({ elementsVisible, instagram, setInstagram, inputFocus
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">4.</span>Qual o seu @ do Instagram?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>4.</span>Qual o seu @ do Instagram?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Digite sem o @ no início
@@ -1251,7 +1437,7 @@ function MomentoContent({ elementsVisible, optionsVisible, selectedMoment, setSe
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">5.</span>Qual o seu momento atual?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>5.</span>Qual o seu momento atual?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Selecione a opção que melhor descreve sua situação
@@ -1299,7 +1485,7 @@ function VendeuForaContent({ elementsVisible, optionsVisible, vendeuFora, setVen
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">6.</span>Você já vendeu fora do Brasil antes?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>6.</span>Você já vendeu fora do Brasil antes?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Queremos saber sobre sua experiência com vendas internacionais
@@ -1334,12 +1520,13 @@ function VendeuForaContent({ elementsVisible, optionsVisible, vendeuFora, setVen
   );
 }
 
-function FaturamentoContent({ elementsVisible, optionsVisible, faturamento, setFaturamento, faturamentoOptions }: {
+function FaturamentoContent({ elementsVisible, faturamento, setFaturamento, inputFocused, setInputFocused, handleKeyPress }: {
   elementsVisible: boolean;
-  optionsVisible: boolean;
   faturamento: string;
   setFaturamento: (value: string) => void;
-  faturamentoOptions: MomentOption[];
+  inputFocused: boolean;
+  setInputFocused: (focused: boolean) => void;
+  handleKeyPress: (e: React.KeyboardEvent) => void;
 }) {
   return (
     <div>
@@ -1347,35 +1534,30 @@ function FaturamentoContent({ elementsVisible, optionsVisible, faturamento, setF
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">7.</span>Quanto você já faturou acumulado no mercado digital até agora?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>7.</span>Quanto você já faturou acumulado no mercado digital até agora?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Selecione a faixa que representa seu faturamento total
+              Digite o valor total que você já faturou (ex: R$ 50.000, R$ 120.000, etc.)
             </div>
           </div>
         </div>
       </div>
       
       <div className="spacer-wrapper-description-main">
-        <div className="moment-options-container">
-          {faturamentoOptions.map((option: MomentOption, index: number) => (
-            <button
-              key={option.id}
-              onClick={() => setFaturamento(option.id)}
-              className={`
-                moment-option-button 
-                ${faturamento === option.id ? 'moment-option-selected' : ''}
-                ${optionsVisible ? 'moment-option-visible' : 'moment-option-hidden'}
-              `}
-              style={{ 
-                animationDelay: optionsVisible ? `${0.15 * index}s` : '0s',
-                transitionDelay: optionsVisible ? `${0.1 * index}s` : '0s'
-              }}
-            >
-              <div className="moment-option-letter">{option.id}</div>
-              <div className="moment-option-text">{option.text}</div>
-            </button>
-          ))}
+        <div className={`input-container ${inputFocused ? 'input-focused' : ''} ${elementsVisible ? 'input-fade-in' : 'input-hidden'}`} style={{ animationDelay: '0.7s' }}>
+          <input
+            type="text"
+            value={faturamento}
+            onChange={(e) => setFaturamento(e.target.value)}
+            onKeyDown={handleKeyPress}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            placeholder="R$ 0 (se ainda não faturou) ou R$ 50.000..."
+            className="name-input input-enhanced"
+            autoFocus
+            maxLength={100}
+          />
+          <div className="input-underline input-underline-enhanced"></div>
         </div>
       </div>
     </div>
@@ -1395,7 +1577,7 @@ function CaixaDisponivelContent({ elementsVisible, optionsVisible, caixaDisponiv
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">8.</span>Hoje, quanto você tem de caixa disponível para investir na escala de um negócio já validado e lucrativo no mercado global?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>8.</span>Hoje, quanto você tem de caixa disponível para investir na escala de um negócio já validado e lucrativo no mercado global?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Selecione a faixa de investimento que você tem disponível
@@ -1443,7 +1625,7 @@ function ProblemaPrincipalContent({ elementsVisible, optionsVisible, problemaPri
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">9.</span>Hoje, qual é o principal problema ou dificuldade que você enfrenta em seu negócio digital atual?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>9.</span>Hoje, qual é o principal problema ou dificuldade que você enfrenta em seu negócio digital atual?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               E que te motiva a buscar faturamento em moedas como (Dólar, Euro ou Libra)?
@@ -1491,7 +1673,7 @@ function AreaAjudaContent({ elementsVisible, optionsVisible, areaAjuda, setAreaA
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">10.</span>Em qual dessas áreas você sente que precisa de ajuda especializada hoje?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>10.</span>Em qual dessas áreas você sente que precisa de ajuda especializada hoje?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Selecione a área onde você mais precisa de suporte
@@ -1539,7 +1721,7 @@ function SocioContent({ elementsVisible, optionsVisible, possuiSocio, setPossuiS
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">11.</span>Você possui algum sócio ou parceiro que participa diretamente das decisões estratégicas?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>11.</span>Você possui algum sócio ou parceiro que participa diretamente das decisões estratégicas?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Queremos entender a estrutura do seu negócio
@@ -1588,7 +1770,7 @@ function PorQueEscolherContent({ elementsVisible, porQueEscolher, setPorQueEscol
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">12.</span>Apenas 10 pessoas serão selecionadas para participar desta consultoria estratégica. Por que deveríamos escolher você?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>12.</span>Apenas 10 pessoas serão selecionadas para participar desta consultoria estratégica. Por que deveríamos escolher você?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Conte-nos sobre seu comprometimento e motivação (mínimo 50 caracteres)
@@ -1633,7 +1815,7 @@ function CompromissoContent({ elementsVisible, optionsVisible, compromisso, setC
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className="question-number">13.</span>Caso você seja selecionado(a), você se compromete a comparecer no dia e horário agendado?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>13.</span>Caso você seja selecionado(a), você se compromete a comparecer no dia e horário agendado?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Esta consultoria requer seu comprometimento total
@@ -1723,14 +1905,6 @@ function FinishedContent({
               {subtitle}
             </div>
             
-            {/* Indicador de status */}
-            {submitStatus === 'success' && (
-              <div className={`text-center mt-6 ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.7s' }}>
-                <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm">
-                  ✅ Dados salvos no Google Sheets
-                </div>
-              </div>
-            )}
             
             {submitStatus === 'partial' && (
               <div className={`text-center mt-6 ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.7s' }}>
