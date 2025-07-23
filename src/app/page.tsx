@@ -89,11 +89,11 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'partial'>('idle');
 
-  // Apps Script URL - NOVA URL ATUALIZADA (v3.0 - Corrigido)
-  // URL corrigida sem setHeaders para compatibilidade
-  // Configuração: Versão 2 em 23 de jul. de 2025, 14:52 - Executar como: gustavosales99999@gmail.com
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgsJU4n8CMcTj8acb3cxnY4b3PcMXKjvHazbFYfwGYc5QGOC3ozpdunywtqOFVK0pD/exec';
-
+  // Apps Script URL - NOVA IMPLEMENTAÇÃO FINAL (23/07/2025)
+  // URL atualizada com validações e planilha única
+  // Testada e funcionando: https://script.google.com/macros/s/AKfycbxN0vcCK71AATc6edkHFJRxMJiNU9-Go5DPC-WIGWKCRq0BzyezyCMajaAi5Q4_qrOM/exec
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN0vcCK71AATc6edkHFJRxMJiNU9-Go5DPC-WIGWKCRq0BzyezyCMajaAi5Q4_qrOM/exec';
+                           
   // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
   const testAppsScriptURL = async () => {
     console.log('🧪 Testando conexão com Apps Script...');
