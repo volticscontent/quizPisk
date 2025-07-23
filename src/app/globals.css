@@ -525,10 +525,10 @@ body {
 .moment-options-container {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin: 32px 0;
+  gap: 12px;
   width: 100%;
-  perspective: 1000px;
+  align-items: center;
+  padding: 0 20px;
 }
 
 .moment-option-button {
@@ -2086,5 +2086,307 @@ body {
   transform: translateY(40px) scale(0.95);
   filter: blur(2px);
   animation: none;
+}
+
+/* Estilos para validações e mensagens de erro */
+.input-error {
+  border-color: #ff4757 !important;
+  box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.1) !important;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid rgba(255, 71, 87, 0.2);
+  border-radius: 6px;
+  color: #ff4757;
+  font-size: 14px;
+  font-weight: 500;
+  animation: errorFadeIn 0.3s ease-out;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+@keyframes errorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para validação de sucesso */
+.input-success {
+  border-color: #2ed573 !important;
+  box-shadow: 0 0 0 2px rgba(46, 213, 115, 0.1) !important;
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(46, 213, 115, 0.1);
+  border: 1px solid rgba(46, 213, 115, 0.2);
+  border-radius: 6px;
+  color: #2ed573;
+  font-size: 14px;
+  font-weight: 500;
+  animation: successFadeIn 0.3s ease-out;
+}
+
+@keyframes successFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Melhorias no botão quando formulário inválido */
+.button-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* Indicador visual de campo obrigatório */
+.required-indicator {
+  color: #ff4757;
+  font-weight: bold;
+}
+
+/* Tooltip de ajuda para validações */
+.validation-tooltip {
+  position: relative;
+  display: inline-block;
+  margin-left: 4px;
+  cursor: help;
+}
+
+.validation-tooltip:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-content {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2d3436;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  transition: opacity 0.3s;
+}
+
+.tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #2d3436;
+}
+
+/* Otimizações específicas para DESKTOP - Layouts mais compactos */
+@media (min-width: 769px) {
+  /* Content wrapper mais compacto no desktop */
+  .content-wrapper-main {
+    padding: 80px 40px 40px 40px; /* Reduzido de 120px para 80px no topo */
+    min-height: calc(100vh - 160px); /* Reduzido de 200px para 160px */
+  }
+
+  /* Header mais próximo */
+  .header-wrapper-main {
+    margin-bottom: 18px; /* Reduzido de 25px para 18px */
+  }
+
+  /* Counter mais próximo */
+  .counter-position-main {
+    margin-bottom: 12px; /* Reduzido de 16px para 12px */
+  }
+
+  /* Títulos com margem otimizada */
+  .title-main-text {
+    margin: 0 0 8px 0; /* Reduzido de 12px para 8px */
+    line-height: 1.05; /* Reduzido de 1.1 para 1.05 */
+  }
+
+  /* Input containers mais próximos */
+  .input-container {
+    margin: 24px 0; /* Reduzido de 32px para 24px */
+  }
+
+  /* Descrição mais próxima */
+  .spacer-wrapper-description-main {
+    margin: 16px 0 24px 0; /* Reduzido de 20px 0 32px 0 */
+  }
+
+  /* Footer mais próximo */
+  .spacer-wrapper-footer-main {
+    margin-top: 24px; /* Reduzido de 32px para 24px */
+  }
+
+  /* Botão action mais próximo */
+  .action-button-main {
+    margin-top: 18px; /* Reduzido de 25px para 18px */
+  }
+
+  /* Moment options container mais compacto */
+  .moment-options-container {
+    gap: 8px; /* Adiciona gap menor entre opções */
+  }
+
+  /* Moment option buttons mais compactos */
+  .moment-option-button {
+    margin-bottom: 8px; /* Reduzido para espaçamento menor */
+    padding: 14px 20px; /* Padding um pouco menor */
+  }
+
+  /* Form textarea com margin otimizada */
+  .form-textarea-main {
+    margin: 16px 0; /* Margin mais compacta */
+  }
+
+  /* Character count mais próximo */
+  .character-count {
+    margin-top: 8px; /* Reduzido para ficar mais próximo */
+  }
+
+  /* Phone input container mais compacto */
+  .phone-input-container {
+    margin: 20px 0; /* Reduzido de margin padrão */
+  }
+
+  /* Instagram input container mais compacto */
+  .instagram-input-container {
+    margin: 20px 0; /* Reduzido de margin padrão */
+  }
+
+  /* Form group com margin otimizada */
+  .form-group-main {
+    margin: 16px 0; /* Margin mais compacta */
+  }
+
+  /* Error e success messages mais próximas */
+  .error-message,
+  .success-message {
+    margin-top: 8px; /* Reduzido para ficar mais próximo do input */
+  }
+
+  /* Tooltip mais próximo */
+  .validation-tooltip {
+    margin-left: 6px; /* Reduzido para ficar mais próximo do texto */
+  }
+
+  /* Progress track com menos padding no topo */
+  .progress-track {
+    top: 0; /* Remove qualquer espaçamento superior */
+  }
+
+  /* Container de opções mais compacto */
+  .options-container {
+    gap: 6px; /* Gap menor entre opções */
+  }
+
+  /* Welcome content com espaçamento otimizado */
+  .quote-mark-main {
+    margin-bottom: 8px; /* Margin menor para quote */
+  }
+
+  /* Button wrapper footer mais compacto */
+  .persistent-footercomponent__PersistentFooterWrapper-sc-171bwtp-0.jTdQsH {
+    padding: 12px 24px; /* Reduzido de 16px para 12px */
+  }
+
+  /* Flex wrapper button mais compacto */
+  .FlexWrapper-sc-__sc-1qu8p4z-2.bnIfYq {
+    padding: 16px 36px; /* Reduzido de 18px 40px */
+  }
+
+  /* Footer wrapper com altura menor */
+  .footer-wrapperstyles__FooterWrapper-sc-12dpj1x-0.jGEmmb {
+    min-height: 70px; /* Reduzido de 80px para 70px */
+  }
+}
+
+/* Otimizações específicas para DESKTOP LARGE - Telas muito grandes */
+@media (min-width: 1200px) {
+  /* Para telas muito grandes, centralizar melhor o conteúdo */
+  .content-wrapper-main {
+    padding: 60px 60px 40px 60px; /* Ainda mais compacto para telas grandes */
+  }
+
+  /* Root container com max-width maior para aproveitar espaço */
+  .root-container-main {
+    max-width: 850px; /* Aumentado de 775px para 850px */
+  }
+
+  /* Headers ainda mais próximos */
+  .header-wrapper-main {
+    margin-bottom: 15px; /* Ainda menor para telas grandes */
+  }
+
+  /* Descrição mais próxima */
+  .spacer-wrapper-description-main {
+    margin: 12px 0 20px 0; /* Ainda mais compacto */
+  }
+
+  /* Inputs ainda mais próximos */
+  .input-container {
+    margin: 20px 0; /* Ainda menor */
+  }
+}
+
+/* Form components - Classes que faltavam */
+.form-group-main {
+  position: relative;
+  width: 100%;
+}
+
+.form-input-main {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 36px;
+  font-weight: 400;
+  padding: 16px 0;
+  width: 100%;
+  outline: none;
+  font-family: var(--font-maven-pro), sans-serif;
+  transition: all 0.4s var(--easing-expo);
+  text-align: center;
+}
+
+.form-input-main:focus {
+  border-bottom-color: var(--orange);
+  box-shadow: 0 3px 15px rgba(45, 211, 59, 0.3);
+}
+
+.form-input-main::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 300;
 }
 

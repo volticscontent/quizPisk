@@ -89,10 +89,20 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'partial'>('idle');
 
+  // Estados de validação
+  const [nameError, setNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [instagramError, setInstagramError] = useState('');
+  const [isFormValid, setIsFormValid] = useState(false);
+
   // Apps Script URL - ATUALIZE COM A NOVA URL DO SEU DEPLOYMENT
   // Depois de criar o novo Apps Script, substitua a URL abaixo:
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhTG5cVO66WNoo-DKObzUly8cIUCngVGq5t1PkTpfDUp-ZTIn74STNbikACYV-9ckg/exec';
-                           
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCFQ7ZIitepAbGGANoZTgUTOI_Ua5MkZsy8qSlaMw9Gb_cXsCGKpgriYmsIWW7iiaH/exec';
+  
+  // URL do webhook n8n para backup
+  const N8N_WEBHOOK_URL = 'https://n8n.landcriativa.com/webhook-test/84909c05-c376-4ebe-a630-7ef428ff1826';
+
   // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
   const testAppsScriptURL = async () => {
     console.log('🧪 Testando conexão com Apps Script...');
@@ -191,6 +201,54 @@ export default function Home() {
     }
   }, []);
 
+  // Função para mapear letras para textos completos das respostas
+  const getResponseText = (questionType: string, selectedValue: string): string => {
+    const optionsMap: { [key: string]: { [key: string]: string } } = {
+      moment: {
+        'A': 'Estou começando do zero no digital',
+        'B': 'Estou estruturando uma operação',
+        'C': 'Já tenho uma operação de dropshipping no Brasil, mas não vendo diariamente',
+        'D': 'Já faturo com constância',
+        'E': 'Sou de outra área do digital'
+      },
+      vendeuFora: {
+        'A': 'Nunca vendi',
+        'B': 'Já vendi algumas vezes',
+        'C': 'Vendo regularmente'
+      },
+      caixaDisponivel: {
+        'A': 'Menos de R$5.000',
+        'B': 'De R$5.000 a R$7.000',
+        'C': 'De R$7.000 a R$10.000',
+        'D': 'De R$10.000 a R$20.000'
+      },
+      problemaPrincipal: {
+        'A': 'Margem baixa vendendo no Brasil (custos altos, impostos)',
+        'B': 'Instabilidade econômica e política no Brasil',
+        'C': 'Limitação de escala no mercado brasileiro',
+        'D': 'Desejo de internacionalizar minha operação (segurança e diversificação)',
+        'E': 'Outro motivo (explique brevemente)'
+      },
+      areaAjuda: {
+        'A': 'Encontrar fornecedores internacionais com preços competitivos',
+        'B': 'Minerar produtos com alto potencial de escala no exterior',
+        'C': 'Estruturar processos e delegar funções para escalar meu negócio atual',
+        'D': 'Resolver problemas de gateways e processamento de pagamentos internacionais',
+        'E': 'Todos'
+      },
+      possuiSocio: {
+        'A': 'Sim',
+        'B': 'Não'
+      },
+      compromisso: {
+        'A': 'Sim, me comprometo',
+        'B': 'Não'
+      }
+    };
+
+    return optionsMap[questionType]?.[selectedValue] || selectedValue;
+  };
+
   // Função para salvar dados no localStorage
   const saveToLocalStorage = () => {
     const formData = {
@@ -198,15 +256,15 @@ export default function Home() {
       phone: countryCode + phone,
       email,
       instagram,
-      moment: selectedMoment,
-      vendeuFora,
+      moment: getResponseText('moment', selectedMoment),
+      vendeuFora: getResponseText('vendeuFora', vendeuFora),
       faturamento,
-      caixaDisponivel,
-      problemaPrincipal,
-      areaAjuda,
-      possuiSocio,
+      caixaDisponivel: getResponseText('caixaDisponivel', caixaDisponivel),
+      problemaPrincipal: getResponseText('problemaPrincipal', problemaPrincipal),
+      areaAjuda: getResponseText('areaAjuda', areaAjuda),
+      possuiSocio: getResponseText('possuiSocio', possuiSocio),
       porQueEscolher,
-      compromisso,
+      compromisso: getResponseText('compromisso', compromisso),
       timestamp: new Date().toISOString(),
       submittedAt: new Date().toLocaleString('pt-BR')
     };
@@ -240,6 +298,34 @@ export default function Home() {
     submittedAt: string;
   }
 
+  // Função para enviar dados para o webhook n8n
+  const sendToN8nWebhook = async (formData: FormData) => {
+    console.log('📤 Enviando dados para n8n webhook...', formData);
+    console.log('🔗 URL n8n utilizada:', N8N_WEBHOOK_URL);
+
+    try {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const responseData = await response.text();
+        console.log('✅ Dados enviados com sucesso para n8n!', responseData);
+        return true;
+      } else {
+        console.error('❌ Erro ao enviar para n8n:', response.status, response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Erro de conexão com n8n:', error);
+      return false;
+    }
+  };
+
   // Função para enviar dados para Google Sheets
   const sendToGoogleSheets = async (formData: FormData) => {
     if (!APPS_SCRIPT_URL) {
@@ -256,15 +342,15 @@ export default function Home() {
     postData.append('email', formData.email);
     postData.append('phone', formData.phone);
     postData.append('instagram', formData.instagram);
-    postData.append('moment', formData.moment);
-    postData.append('vendeuFora', formData.vendeuFora);
+    postData.append('moment', formData.moment); // Agora enviará o texto completo
+    postData.append('vendeuFora', formData.vendeuFora); // Agora enviará o texto completo
     postData.append('faturamento', formData.faturamento);
-    postData.append('caixaDisponivel', formData.caixaDisponivel);
-    postData.append('problemaPrincipal', formData.problemaPrincipal);
-    postData.append('areaAjuda', formData.areaAjuda);
-    postData.append('possuiSocio', formData.possuiSocio);
+    postData.append('caixaDisponivel', formData.caixaDisponivel); // Agora enviará o texto completo
+    postData.append('problemaPrincipal', formData.problemaPrincipal); // Agora enviará o texto completo
+    postData.append('areaAjuda', formData.areaAjuda); // Agora enviará o texto completo
+    postData.append('possuiSocio', formData.possuiSocio); // Agora enviará o texto completo
     postData.append('porQueEscolher', formData.porQueEscolher);
-    postData.append('compromisso', formData.compromisso);
+    postData.append('compromisso', formData.compromisso); // Agora enviará o texto completo
     postData.append('timestamp', formData.timestamp);
     postData.append('submittedAt', formData.submittedAt);
 
@@ -334,6 +420,12 @@ export default function Home() {
 
   // Função para finalizar e enviar dados
   const finishQuiz = async () => {
+    // Previne envios múltiplos
+    if (isSubmitting) {
+      console.log('⚠️ Envio já em andamento, aguarde...');
+      return;
+    }
+
     console.log('🎯 Finalizando quiz...');
     setIsSubmitting(true);
     
@@ -342,29 +434,57 @@ export default function Home() {
       const formData = saveToLocalStorage();
       
       if (formData) {
-        console.log('💾 Dados salvos localmente, tentando enviar...');
+        console.log('💾 Dados salvos localmente, tentando enviar para múltiplos destinos...');
         
-        // Tenta enviar para Google Sheets
-        const sent = await sendToGoogleSheets(formData);
-        
-        if (sent) {
-          console.log('✅ Quiz finalizado e enviado com sucesso!');
-          setSubmitStatus('success');
-          
-          // Opcional: mostrar notificação de sucesso
-          if (typeof window !== 'undefined' && 'Notification' in window) {
-            try {
-              new Notification('PiscaForm', {
-                body: 'Seus dados foram enviados com sucesso!',
-                icon: '/lgSemFundo.png'
-              });
-            } catch (e) {
-              console.log('Notificação não disponível');
-            }
-          }
+        // Envia para ambos os destinos em paralelo
+        const [sheetsResult, n8nResult] = await Promise.allSettled([
+          sendToGoogleSheets(formData),
+          sendToN8nWebhook(formData)
+        ]);
+
+        let successCount = 0;
+        const errorDetails = [];
+
+        // Verifica resultado do Google Sheets
+        if (sheetsResult.status === 'fulfilled' && sheetsResult.value) {
+          console.log('✅ Dados enviados com sucesso para Google Sheets!');
+          successCount++;
         } else {
-          console.log('⚠️ Quiz salvo localmente, mas não foi possível enviar para Google Sheets');
+          console.log('❌ Falha ao enviar para Google Sheets:', sheetsResult);
+          errorDetails.push('Google Sheets');
+        }
+
+        // Verifica resultado do n8n
+        if (n8nResult.status === 'fulfilled' && n8nResult.value) {
+          console.log('✅ Dados enviados com sucesso para n8n webhook!');
+          successCount++;
+        } else {
+          console.log('❌ Falha ao enviar para n8n:', n8nResult);
+          errorDetails.push('n8n webhook');
+        }
+
+        // Define status baseado nos resultados
+        if (successCount === 2) {
+          console.log('🎉 Quiz finalizado e enviado com sucesso para todos os destinos!');
+          setSubmitStatus('success');
+        } else if (successCount === 1) {
+          console.log(`⚠️ Quiz enviado parcialmente (${2 - successCount} de 2 falharam: ${errorDetails.join(', ')})`);
           setSubmitStatus('partial');
+        } else {
+          console.log('❌ Falha ao enviar para todos os destinos, mas dados salvos localmente');
+          setSubmitStatus('partial');
+        }
+        
+        // Opcional: mostrar notificação de sucesso
+        if (successCount > 0 && typeof window !== 'undefined' && 'Notification' in window) {
+          try {
+            new Notification('PiscaForm', {
+              body: `Seus dados foram enviados com sucesso para ${successCount} de 2 destinos!`,
+              icon: '/lgSemFundo.png'
+            });
+          } catch (e) {
+            console.log('Notificação não disponível');
+          }
         }
       } else {
         console.error('❌ Erro ao salvar dados localmente');
@@ -766,7 +886,11 @@ export default function Home() {
   };
 
   const handleContinue = () => {
-    if (isTransitioning.current) return; // Evita múltiplas execuções
+    // Previne múltiplas execuções
+    if (isTransitioning.current || isSubmitting) {
+      console.log('⚠️ Ação já em andamento, aguarde...');
+      return;
+    }
     
     switch (currentStep) {
       case 'welcome':
@@ -854,6 +978,9 @@ export default function Home() {
 
 
   const isButtonDisabled = () => {
+    // Se está enviando, desabilita o botão
+    if (isSubmitting) return true;
+    
     switch (currentStep) {
       case 'name': return !name.trim();
       case 'whatsapp': return !phone.trim();
@@ -870,6 +997,86 @@ export default function Home() {
       case 'compromisso': return !compromisso;
       default: return false;
     }
+  };
+
+  // Funções de validação em tempo real
+  const validateName = (value: string) => {
+    if (!value.trim()) {
+      setNameError('Nome é obrigatório');
+      return false;
+    }
+    if (value.trim().length < 2) {
+      setNameError('Nome deve ter pelo menos 2 caracteres');
+      return false;
+    }
+    if (value.trim().length > 100) {
+      setNameError('Nome muito longo (máximo 100 caracteres)');
+      return false;
+    }
+    if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(value.trim())) {
+      setNameError('Nome deve conter apenas letras');
+      return false;
+    }
+    setNameError('');
+    return true;
+  };
+
+  const validateEmail = (value: string) => {
+    if (!value.trim()) {
+      setEmailError('Email é obrigatório');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.trim())) {
+      setEmailError('Email inválido (exemplo: usuario@dominio.com)');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const validatePhone = (value: string) => {
+    if (!value.trim()) {
+      setPhoneError('Telefone é obrigatório');
+      return false;
+    }
+    const phoneClean = value.replace(/[\s\(\)\-]/g, '');
+    if (!/^\d{10,11}$/.test(phoneClean)) {
+      setPhoneError('Telefone deve ter 10 ou 11 dígitos (ex: 11999887766)');
+      return false;
+    }
+    setPhoneError('');
+    return true;
+  };
+
+  const validateInstagram = (value: string) => {
+    if (!value.trim()) {
+      setInstagramError('Instagram é obrigatório');
+      return false;
+    }
+    const instaClean = value.replace('@', '').trim();
+    if (instaClean.length < 3 || instaClean.length > 30) {
+      setInstagramError('Instagram deve ter entre 3 e 30 caracteres');
+      return false;
+    }
+    if (!/^[a-zA-Z0-9_.]+$/.test(instaClean)) {
+      setInstagramError('Instagram deve conter apenas letras, números, _ e .');
+      return false;
+    }
+    setInstagramError('');
+    return true;
+  };
+
+  // Função para validar formulário completo
+  const validateForm = () => {
+    const nameValid = validateName(name);
+    const emailValid = validateEmail(email);
+    const phoneValid = validatePhone(phone);
+    const instagramValid = validateInstagram(instagram);
+    
+    const formValid = nameValid && emailValid && phoneValid && instagramValid;
+    setIsFormValid(formValid);
+    return formValid;
   };
 
   if (!isClient) {
@@ -1129,7 +1336,7 @@ export default function Home() {
                   className={`ButtonWrapper-sc-__sc-1qu8p4z-0 eTknZ ${isButtonPressed ? 'button-pressed' : ''} ${isButtonDisabled() ? 'button-disabled' : ''}`}
                   onClick={handleContinue}
                   onKeyDown={handleKeyPress}
-                  onMouseDown={() => setIsButtonPressed(true)}
+                  onMouseDown={() => !isButtonDisabled() && setIsButtonPressed(true)}
                   onMouseUp={() => setIsButtonPressed(false)}
                   onMouseLeave={() => setIsButtonPressed(false)}
                   disabled={isButtonDisabled()}
@@ -1137,7 +1344,9 @@ export default function Home() {
                   <div className="ButtonBackground-sc-__sc-1qu8p4z-1 hlUeyE"></div>
                   <span className="FlexWrapper-sc-__sc-1qu8p4z-2 bnIfYq">
                     <span className="ButtonTextWrapper-sc-__sc-1qu8p4z-5 iWNLzO">
-                      <span className="TextWrapper-sc-__sc-1f8vz90-0 gbnXlt">{getButtonText()}</span>
+                      <span className="TextWrapper-sc-__sc-1f8vz90-0 gbnXlt">
+                        {isSubmitting ? 'Enviando...' : getButtonText()}
+                      </span>
                     </span>
                   </span>
                 </button>
@@ -1183,37 +1392,78 @@ function WelcomeContent({ elementsVisible }: { elementsVisible: boolean }) {
   );
 }
 
-function NameContent({ elementsVisible, name, setName, inputFocused, setInputFocused, handleKeyPress }: NameContentProps) {
+function NameContent({ elementsVisible, name, setName, inputFocused, setInputFocused, handleKeyPress }: {
+  elementsVisible: boolean;
+  name: string;
+  setName: (name: string) => void;
+  inputFocused: boolean;
+  setInputFocused: (focused: boolean) => void;
+  handleKeyPress: (e: React.KeyboardEvent) => void;
+}) {
+  const [nameError, setNameError] = useState('');
+
+  const validateName = (value: string) => {
+    if (!value.trim()) {
+      setNameError('Nome é obrigatório');
+      return false;
+    }
+    if (value.trim().length < 2) {
+      setNameError('Nome deve ter pelo menos 2 caracteres');
+      return false;
+    }
+    if (value.trim().length > 100) {
+      setNameError('Nome muito longo (máximo 100 caracteres)');
+      return false;
+    }
+    if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(value.trim())) {
+      setNameError('Nome deve conter apenas letras');
+      return false;
+    }
+    setNameError('');
+    return true;
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setName(value);
+    validateName(value);
+  };
+
   return (
     <div>
       <div data-qa="question-header" className="header-wrapper-main">
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>1.</span>Qual é o seu nome?
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>1.</span>Qual é o seu nome?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Vamos começar com o básico. Como podemos te chamar?
+              Digite seu nome completo
             </div>
           </div>
         </div>
       </div>
       
       <div className="spacer-wrapper-description-main">
-        <div className={`input-container ${inputFocused ? 'input-focused' : ''} ${elementsVisible ? 'input-fade-in' : 'input-hidden'}`} style={{ animationDelay: '0.7s' }}>
+        <div className="form-group-main">
           <input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={handleKeyPress}
+            onChange={handleNameChange}
             onFocus={() => setInputFocused(true)}
             onBlur={() => setInputFocused(false)}
-            placeholder="Digite seu nome aqui..."
-            className="name-input input-enhanced"
+            onKeyDown={handleKeyPress}
+            placeholder="Seu nome completo"
+            className={`form-input-main ${nameError ? 'input-error' : ''}`}
             autoFocus
-            maxLength={50}
+            maxLength={100}
           />
-          <div className="input-underline input-underline-enhanced"></div>
+          {nameError && (
+            <div className="error-message">
+              <span className="error-icon">⚠️</span>
+              {nameError}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1221,9 +1471,26 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
 }
 
 function WhatsAppContent({ elementsVisible, name, phone, setPhone, countryCode, setCountryCode, inputFocused, setInputFocused, showCountryDropdown, setShowCountryDropdown, countries, handleKeyPress }: WhatsAppContentProps) {
+  const [phoneError, setPhoneError] = useState('');
+
+  const validatePhone = (value: string) => {
+    if (!value.trim()) {
+      setPhoneError('Telefone é obrigatório');
+      return false;
+    }
+    const phoneClean = value.replace(/[\s\(\)\-]/g, '');
+    if (!/^\d{10,11}$/.test(phoneClean)) {
+      setPhoneError('Telefone deve ter 10 ou 11 dígitos (ex: 11999887766)');
+      return false;
+    }
+    setPhoneError('');
+    return true;
+  };
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^\d\s\-\(\)]/g, '');
     setPhone(value);
+    validatePhone(value);
   };
 
   const selectCountry = (country: Country) => {
@@ -1241,13 +1508,19 @@ function WhatsAppContent({ elementsVisible, name, phone, setPhone, countryCode, 
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Vamos precisar entrar em contato com você
+              <span className="validation-tooltip">
+                ℹ️
+                <div className="tooltip-content">
+                  10-11 dígitos (ex: 11999887766)
+                </div>
+              </span>
             </div>
           </div>
         </div>
       </div>
       
       <div className="spacer-wrapper-description-main">
-        <div className={`phone-input-container ${inputFocused ? 'input-focused' : ''} ${elementsVisible ? 'input-fade-in' : 'input-hidden'}`} style={{ animationDelay: '0.7s' }}>
+        <div className={`phone-input-container ${inputFocused ? 'input-focused' : ''} ${elementsVisible ? 'input-fade-in' : 'input-hidden'} ${phoneError ? 'input-error' : phone && !phoneError ? 'input-success' : ''}`} style={{ animationDelay: '0.7s' }}>
           <div className="phone-input-wrapper">
             <div className="country-selector-wrapper">
               <button
@@ -1287,14 +1560,27 @@ function WhatsAppContent({ elementsVisible, name, phone, setPhone, countryCode, 
               onKeyDown={handleKeyPress}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder="(11) 96123-4567"
+              placeholder="11999887766"
               className="phone-input input-enhanced"
               autoFocus
-              maxLength={20}
+              maxLength={15}
             />
           </div>
           <div className="input-underline input-underline-enhanced"></div>
         </div>
+        
+        {phoneError && (
+          <div className="error-message" style={{ marginTop: '12px' }}>
+            <span className="error-icon">⚠️</span>
+            {phoneError}
+          </div>
+        )}
+        {phone && !phoneError && (
+          <div className="success-message" style={{ marginTop: '12px' }}>
+            <span className="success-icon">✅</span>
+            Telefone válido!
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1308,6 +1594,28 @@ function EmailContent({ elementsVisible, email, setEmail, inputFocused, setInput
   setInputFocused: (focused: boolean) => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
 }) {
+  const [emailError, setEmailError] = useState('');
+
+  const validateEmail = (value: string) => {
+    if (!value.trim()) {
+      setEmailError('Email é obrigatório');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.trim())) {
+      setEmailError('Email inválido (exemplo: usuario@dominio.com)');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    validateEmail(value);
+  };
+
   return (
     <div>
       <div data-qa="question-header" className="header-wrapper-main">
@@ -1318,6 +1626,12 @@ function EmailContent({ elementsVisible, email, setEmail, inputFocused, setInput
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
               Digite seu melhor e-mail para contato
+              <span className="validation-tooltip">
+                ℹ️
+                <div className="tooltip-content">
+                  Formato: usuario@dominio.com
+                </div>
+              </span>
             </div>
           </div>
         </div>
@@ -1328,14 +1642,26 @@ function EmailContent({ elementsVisible, email, setEmail, inputFocused, setInput
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailChange}
             onFocus={() => setInputFocused(true)}
             onBlur={() => setInputFocused(false)}
             onKeyDown={handleKeyPress}
             placeholder="seu@email.com"
-            className="form-input-main"
+            className={`form-input-main ${emailError ? 'input-error' : email && !emailError ? 'input-success' : ''}`}
             autoFocus
           />
+          {emailError && (
+            <div className="error-message">
+              <span className="error-icon">⚠️</span>
+              {emailError}
+            </div>
+          )}
+          {email && !emailError && (
+            <div className="success-message">
+              <span className="success-icon">✅</span>
+              Email válido!
+            </div>
+          )}
         </div>
       </div>
     </div>
