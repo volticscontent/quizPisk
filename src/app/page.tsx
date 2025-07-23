@@ -251,16 +251,33 @@ export default function Home() {
     console.log('📤 Enviando dados para Google Sheets...', formData);
     console.log('🔗 URL utilizada:', APPS_SCRIPT_URL);
 
+    // Criar FormData para envio correto ao Apps Script
+    const postData = new FormData();
+    postData.append('name', formData.name);
+    postData.append('email', formData.email);
+    postData.append('phone', formData.phone);
+    postData.append('instagram', formData.instagram);
+    postData.append('moment', formData.moment);
+    postData.append('vendeuFora', formData.vendeuFora);
+    postData.append('faturamento', formData.faturamento);
+    postData.append('caixaDisponivel', formData.caixaDisponivel);
+    postData.append('problemaPrincipal', formData.problemaPrincipal);
+    postData.append('areaAjuda', formData.areaAjuda);
+    postData.append('possuiSocio', formData.possuiSocio);
+    postData.append('porQueEscolher', formData.porQueEscolher);
+    postData.append('compromisso', formData.compromisso);
+    postData.append('timestamp', formData.timestamp);
+    postData.append('submittedAt', formData.submittedAt);
+
+    console.log('📋 Dados preparados para envio:', Object.fromEntries(postData));
+
     // Método 1: Tentar com fetch + no-cors (mais compatível para CORS)
     try {
       console.log('🔄 Tentativa 1: fetch com no-cors (método principal)...');
       
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body: postData, // Usar FormData em vez de JSON
         mode: 'no-cors',
         credentials: 'omit',
         cache: 'no-cache',
@@ -306,61 +323,6 @@ export default function Home() {
       
     } catch (formError) {
       console.error('❌ Erro com formulário:', formError);
-    }
-
-    // Método 3: Tentar com Axios (se disponível)
-    try {
-      console.log('🔄 Tentativa 3: Axios...');
-      
-      const response = await axios.post(APPS_SCRIPT_URL, formData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        timeout: 15000,
-        withCredentials: false,
-      });
-
-      console.log('✅ Dados enviados com Axios! Status:', response.status);
-      return true;
-      
-    } catch (axiosError: unknown) {
-      console.error('❌ Erro com Axios:', axiosError);
-      
-      // Se for erro 401, pode ser problema de autorização no Apps Script
-      if (axiosError && typeof axiosError === 'object' && 'response' in axiosError) {
-        const error = axiosError as { response?: { status?: number } };
-        if (error.response?.status === 401) {
-          console.error('🔐 ERRO 401: Apps Script não autorizado!');
-          console.error('📋 Soluções:');
-          console.error('   1. Execute testAuthorization() no Google Apps Script');
-          console.error('   2. Autorize todas as permissões solicitadas');
-          console.error('   3. Verifique se o deployment está correto');
-        }
-      }
-    }
-
-    // Método 4: Tentar com fetch cors (última tentativa)
-    try {
-      console.log('🔄 Tentativa 4: fetch com cors...');
-      
-      const response = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-        mode: 'cors',
-      });
-
-      if (response.ok) {
-        console.log('✅ Dados enviados com fetch cors! Status:', response.status);
-        return true;
-      } else {
-        console.warn('⚠️ Resposta não ok:', response.status);
-      }
-      
-    } catch (corsError) {
-      console.error('❌ Erro com fetch cors:', corsError);
     }
 
     console.error('❌ Todas as tentativas falharam');
