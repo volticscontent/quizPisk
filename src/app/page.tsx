@@ -98,11 +98,8 @@ export default function Home() {
 
   // Apps Script URL - ATUALIZE COM A NOVA URL DO SEU DEPLOYMENT
   // Depois de criar o novo Apps Script, substitua a URL abaixo:
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCFQ7ZIitepAbGGANoZTgUTOI_Ua5MkZsy8qSlaMw9Gb_cXsCGKpgriYmsIWW7iiaH/exec';
-  
-  // URL do webhook n8n para backup
-  const N8N_WEBHOOK_URL = 'https://n8n.landcriativa.com/webhook-test/84909c05-c376-4ebe-a630-7ef428ff1826';
-
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqYxPlq2SLP6EXRAp3_9iX-rUaHSqnVkViw8424fo/dev';
+                           
   // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
   const testAppsScriptURL = async () => {
     console.log('🧪 Testando conexão com Apps Script...');
