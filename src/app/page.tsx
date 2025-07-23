@@ -91,7 +91,7 @@ export default function Home() {
 
   // Apps Script URL - ATUALIZE COM A NOVA URL DO SEU DEPLOYMENT
   // Depois de criar o novo Apps Script, substitua a URL abaixo:
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzG02pWKjnOrn8hw-PKvt0ni5wTsxVuIZBhF68C_SZmqW7efTCH7g56HFMY8E9zpeXF/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqYxPlq2SLP6EXRAp3_9iX-rUaHSqnVkViw8424fo/dev';
                            
   // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
   const testAppsScriptURL = async () => {
