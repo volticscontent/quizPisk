@@ -2,7 +2,44 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import axios from 'axios';
+
+// Configuração do Google Analytics
+declare global {
+  interface Window {
+    gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void;
+  }
+}
+
+// CONFIGURE SEU GOOGLE ANALYTICS ID AQUI
+const GA_MEASUREMENT_ID = 'G-D6BPDXCNJQ'; // Substitua pelo seu ID do Google Analytics
+
+// Função para enviar eventos para o Google Analytics
+const sendGAEvent = (eventName: string, parameters?: Record<string, string | number | boolean>) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    console.log(`📊 GA Event: ${eventName}`, parameters);
+    window.gtag('event', eventName, {
+      event_category: 'Quiz',
+      event_label: 'PiscaForm',
+      ...parameters
+    });
+  } else {
+    console.log(`📊 GA não carregado ainda. Event: ${eventName}`, parameters);
+  }
+};
+
+// Função para rastrear visualização de página
+const sendGAPageView = (pageName: string) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    console.log(`📄 GA PageView: ${pageName}`);
+    window.gtag('config', GA_MEASUREMENT_ID, {
+      page_title: `PiscaForm - ${pageName}`,
+      page_location: window.location.href,
+      custom_map: {
+        dimension1: pageName
+      }
+    });
+  }
+};
 
 type QuizStep = 'welcome' | 'name' | 'whatsapp' | 'email' | 'instagram' | 'momento' | 'vendeu_fora' | 'faturamento' | 'caixa_disponivel' | 'problema_principal' | 'area_ajuda' | 'socio' | 'por_que_escolher' | 'compromisso' | 'finished';
 
@@ -98,8 +135,8 @@ export default function Home() {
 
   // Apps Script URL - ATUALIZE COM A NOVA URL DO SEU DEPLOYMENT
   // Depois de criar o novo Apps Script, substitua a URL abaixo:
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqYxPlq2SLP6EXRAp3_9iX-rUaHSqnVkViw8424fo/dev';
-                           
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCFQ7ZIitepAbGGANoZTgUTOI_Ua5MkZsy8qSlaMw9Gb_cXsCGKpgriYmsIWW7iiaH/exec';
+  const N8N_WEBHOOK_URL = 'https://n8n.landcriativa.com/webhook/84909c05-c376-4ebe-a630-7ef428ff1826';
   // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
   const testAppsScriptURL = async () => {
     console.log('🧪 Testando conexão com Apps Script...');
@@ -415,6 +452,65 @@ export default function Home() {
     return false;
   };
 
+  // Função para mapear step para nome do evento GA
+  const getGAEventName = (step: QuizStep): string => {
+    const eventMap: Record<QuizStep, string> = {
+      welcome: 'quiz_start',
+      name: 'pergunta_1_nome',
+      whatsapp: 'pergunta_2_whatsapp', 
+      email: 'pergunta_3_email',
+      instagram: 'pergunta_4_instagram',
+      momento: 'pergunta_5_momento_atual',
+      vendeu_fora: 'pergunta_6_vendeu_fora',
+      faturamento: 'pergunta_7_faturamento',
+      caixa_disponivel: 'pergunta_8_caixa_disponivel',
+      problema_principal: 'pergunta_9_problema_principal',
+      area_ajuda: 'pergunta_10_area_ajuda',
+      socio: 'pergunta_11_possui_socio',
+      por_que_escolher: 'pergunta_12_por_que_escolher',
+      compromisso: 'pergunta_13_compromisso',
+      finished: 'quiz_complete'
+    };
+    
+    return eventMap[step] || step;
+  };
+
+  // Função para enviar evento de progresso
+  const sendProgressEvent = (step: QuizStep, progress: number) => {
+    const eventName = getGAEventName(step);
+    sendGAEvent(eventName, {
+      step_name: step,
+      progress_percentage: progress,
+      step_number: getStepNumber(step)
+    });
+    
+    // Também envia pageview
+    sendGAPageView(`Pergunta ${getStepNumber(step)} - ${step}`);
+  };
+
+  // Função para obter número da etapa
+  const getStepNumber = (step: QuizStep): number => {
+    const stepNumbers: Record<QuizStep, number> = {
+      welcome: 0,
+      name: 1,
+      whatsapp: 2,
+      email: 3,
+      instagram: 4,
+      momento: 5,
+      vendeu_fora: 6,
+      faturamento: 7,
+      caixa_disponivel: 8,
+      problema_principal: 9,
+      area_ajuda: 10,
+      socio: 11,
+      por_que_escolher: 12,
+      compromisso: 13,
+      finished: 14
+    };
+    
+    return stepNumbers[step] || 0;
+  };
+
   // Função para finalizar e enviar dados
   const finishQuiz = async () => {
     // Previne envios múltiplos
@@ -425,6 +521,12 @@ export default function Home() {
 
     console.log('🎯 Finalizando quiz...');
     setIsSubmitting(true);
+    
+    // Envia evento de início do envio
+    sendGAEvent('quiz_submit_started', {
+      step_name: 'compromisso',
+      step_number: 13
+    });
     
     try {
       // Salva no localStorage primeiro
@@ -446,30 +548,47 @@ export default function Home() {
         if (sheetsResult.status === 'fulfilled' && sheetsResult.value) {
           console.log('✅ Dados enviados com sucesso para Google Sheets!');
           successCount++;
+          sendGAEvent('quiz_submit_sheets_success');
         } else {
           console.log('❌ Falha ao enviar para Google Sheets:', sheetsResult);
           errorDetails.push('Google Sheets');
+          sendGAEvent('quiz_submit_sheets_error');
         }
 
         // Verifica resultado do n8n
         if (n8nResult.status === 'fulfilled' && n8nResult.value) {
           console.log('✅ Dados enviados com sucesso para n8n webhook!');
           successCount++;
+          sendGAEvent('quiz_submit_n8n_success');
         } else {
           console.log('❌ Falha ao enviar para n8n:', n8nResult);
           errorDetails.push('n8n webhook');
+          sendGAEvent('quiz_submit_n8n_error');
         }
 
         // Define status baseado nos resultados
         if (successCount === 2) {
           console.log('🎉 Quiz finalizado e enviado com sucesso para todos os destinos!');
           setSubmitStatus('success');
+          sendGAEvent('quiz_submit_complete_success', {
+            destinations_successful: 2,
+            total_destinations: 2
+          });
         } else if (successCount === 1) {
           console.log(`⚠️ Quiz enviado parcialmente (${2 - successCount} de 2 falharam: ${errorDetails.join(', ')})`);
           setSubmitStatus('partial');
+          sendGAEvent('quiz_submit_complete_partial', {
+            destinations_successful: successCount,
+            total_destinations: 2,
+            failed_destinations: errorDetails.join(', ')
+          });
         } else {
           console.log('❌ Falha ao enviar para todos os destinos, mas dados salvos localmente');
           setSubmitStatus('partial');
+          sendGAEvent('quiz_submit_complete_failed', {
+            destinations_successful: 0,
+            total_destinations: 2
+          });
         }
         
         // Opcional: mostrar notificação de sucesso
@@ -486,10 +605,14 @@ export default function Home() {
       } else {
         console.error('❌ Erro ao salvar dados localmente');
         setSubmitStatus('error');
+        sendGAEvent('quiz_submit_localstorage_error');
       }
     } catch (error) {
       console.error('❌ Erro ao finalizar quiz:', error);
       setSubmitStatus('error');
+      sendGAEvent('quiz_submit_general_error', {
+        error_message: String(error)
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -699,6 +822,13 @@ export default function Home() {
       // Carrega dados salvos se existirem
       loadFromLocalStorage();
       
+      // Envia evento de início do quiz
+      sendGAEvent('quiz_started', {
+        timestamp: new Date().toISOString(),
+        user_agent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+        referrer: typeof window !== 'undefined' ? document.referrer : ''
+      });
+      
       // Inicia animação de boas-vindas apenas uma vez
       setTimeout(() => {
         if (currentStep === 'welcome') {
@@ -708,6 +838,28 @@ export default function Home() {
     }
   }, []);
 
+  // Rastreamento de abandono da página
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (currentStep !== 'finished') {
+        sendGAEvent('quiz_abandoned', {
+          current_step: currentStep,
+          step_number: getStepNumber(currentStep),
+          progress_percentage: getProgressForStep(currentStep),
+          time_spent: Date.now() - (typeof window !== 'undefined' ? window.performance.timing.navigationStart : 0)
+        });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }
+  }, [currentStep]);
+
   // Controle de progresso baseado no step atual
   useEffect(() => {
     if (!hasHydrated.current) return;
@@ -715,6 +867,9 @@ export default function Home() {
     // Atualiza o progresso
     const newProgress = getProgressForStep(currentStep);
     setProgress(newProgress);
+    
+    // Envia evento para Google Analytics
+    sendProgressEvent(currentStep, newProgress);
   }, [currentStep]);
 
 
@@ -734,6 +889,12 @@ export default function Home() {
     
     isTransitioning.current = true;
     clearAllTimers();
+    
+    // Envia evento de conclusão da etapa atual
+    sendGAEvent(`${getGAEventName(currentStep)}_completed`, {
+      step_name: currentStep,
+      step_number: getStepNumber(currentStep)
+    });
     
     // Animação de saída apenas do conteúdo
     setContentVisible(false);
@@ -888,6 +1049,13 @@ export default function Home() {
       console.log('⚠️ Ação já em andamento, aguarde...');
       return;
     }
+
+    // Rastreia clique no botão continuar
+    sendGAEvent('button_continue_clicked', {
+      current_step: currentStep,
+      step_number: getStepNumber(currentStep),
+      progress_percentage: getProgressForStep(currentStep)
+    });
     
     switch (currentStep) {
       case 'welcome':
@@ -895,67 +1063,152 @@ export default function Home() {
         break;
       case 'name':
         if (name.trim()) {
+          sendGAEvent('field_validation_passed', {
+            field_name: 'name',
+            field_value_length: name.trim().length
+          });
           nextStep();
+        } else {
+          sendGAEvent('field_validation_failed', {
+            field_name: 'name',
+            error_type: 'empty'
+          });
         }
         break;
       case 'whatsapp':
         if (phone.trim()) {
+          sendGAEvent('field_validation_passed', {
+            field_name: 'phone',
+            field_value_length: phone.trim().length,
+            country_code: countryCode
+          });
           nextStep();
+        } else {
+          sendGAEvent('field_validation_failed', {
+            field_name: 'phone',
+            error_type: 'empty'
+          });
         }
         break;
       case 'email':
         if (email.trim()) {
+          sendGAEvent('field_validation_passed', {
+            field_name: 'email',
+            email_domain: email.split('@')[1] || ''
+          });
           nextStep();
+        } else {
+          sendGAEvent('field_validation_failed', {
+            field_name: 'email',
+            error_type: 'empty'
+          });
         }
         break;
       case 'instagram':
         if (instagram.trim()) {
+          sendGAEvent('field_validation_passed', {
+            field_name: 'instagram',
+            field_value_length: instagram.trim().length
+          });
           nextStep();
+        } else {
+          sendGAEvent('field_validation_failed', {
+            field_name: 'instagram',
+            error_type: 'empty'
+          });
         }
         break;
       case 'momento':
         if (selectedMoment) {
           nextStep();
+        } else {
+          sendGAEvent('validation_failed_no_selection', {
+            question_name: 'momento'
+          });
         }
         break;
       case 'vendeu_fora':
         if (vendeuFora) {
           nextStep();
+        } else {
+          sendGAEvent('validation_failed_no_selection', {
+            question_name: 'vendeu_fora'
+          });
         }
         break;
       case 'faturamento':
         if (faturamento.trim()) {
+          sendGAEvent('field_validation_passed', {
+            field_name: 'faturamento',
+            field_value_length: faturamento.trim().length
+          });
           nextStep();
+        } else {
+          sendGAEvent('field_validation_failed', {
+            field_name: 'faturamento',
+            error_type: 'empty'
+          });
         }
         break;
       case 'caixa_disponivel':
         if (caixaDisponivel) {
           nextStep();
+        } else {
+          sendGAEvent('validation_failed_no_selection', {
+            question_name: 'caixa_disponivel'
+          });
         }
         break;
       case 'problema_principal':
         if (problemaPrincipal) {
           nextStep();
+        } else {
+          sendGAEvent('validation_failed_no_selection', {
+            question_name: 'problema_principal'
+          });
         }
         break;
       case 'area_ajuda':
         if (areaAjuda) {
           nextStep();
+        } else {
+          sendGAEvent('validation_failed_no_selection', {
+            question_name: 'area_ajuda'
+          });
         }
         break;
       case 'socio':
         if (possuiSocio) {
           nextStep();
+        } else {
+          sendGAEvent('validation_failed_no_selection', {
+            question_name: 'socio'
+          });
         }
         break;
       case 'por_que_escolher':
         if (porQueEscolher.trim() && porQueEscolher.trim().length >= 50) {
+          sendGAEvent('field_validation_passed', {
+            field_name: 'por_que_escolher',
+            field_value_length: porQueEscolher.trim().length
+          });
           nextStep();
+        } else {
+          sendGAEvent('field_validation_failed', {
+            field_name: 'por_que_escolher',
+            error_type: porQueEscolher.trim().length === 0 ? 'empty' : 'too_short',
+            current_length: porQueEscolher.trim().length,
+            required_length: 50
+          });
         }
         break;
       case 'compromisso':
         if (compromisso) {
           finishQuiz();
+        } else {
+          sendGAEvent('validation_failed_no_selection', {
+            question_name: 'compromisso'
+          });
         }
         break;
     }
@@ -1424,6 +1677,22 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
     const value = e.target.value;
     setName(value);
     validateName(value);
+    
+    // Rastreia evento de preenchimento do nome
+    if (value.length >= 2) {
+      sendGAEvent('field_filled_name', {
+        field_name: 'name',
+        character_count: value.length,
+        is_valid: validateName(value)
+      });
+    }
+  };
+
+  const handleNameFocus = () => {
+    setInputFocused(true);
+    sendGAEvent('field_focused_name', {
+      field_name: 'name'
+    });
   };
 
   return (
@@ -1447,7 +1716,7 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
             type="text"
             value={name}
             onChange={handleNameChange}
-            onFocus={() => setInputFocused(true)}
+            onFocus={handleNameFocus}
             onBlur={() => setInputFocused(false)}
             onKeyDown={handleKeyPress}
             placeholder="Seu nome completo"
@@ -1488,11 +1757,27 @@ function WhatsAppContent({ elementsVisible, name, phone, setPhone, countryCode, 
     const value = e.target.value.replace(/[^\d\s\-\(\)]/g, '');
     setPhone(value);
     validatePhone(value);
+    
+    // Rastreia evento de preenchimento do telefone
+    if (value.length >= 8) {
+      sendGAEvent('field_filled_phone', {
+        field_name: 'phone',
+        character_count: value.length,
+        country_code: countryCode,
+        is_valid: validatePhone(value)
+      });
+    }
   };
 
   const selectCountry = (country: Country) => {
     setCountryCode(country.code);
     setShowCountryDropdown(false);
+    
+    // Rastreia seleção de país
+    sendGAEvent('country_selected', {
+      country_code: country.code,
+      country_name: country.name
+    });
   };
 
   return (
@@ -1715,6 +2000,19 @@ function InstagramContent({ elementsVisible, instagram, setInstagram, inputFocus
 }
 
 function MomentoContent({ elementsVisible, optionsVisible, selectedMoment, setSelectedMoment, momentOptions }: MomentoContentProps) {
+  
+  const handleMomentSelection = (optionId: string) => {
+    setSelectedMoment(optionId);
+    
+    // Rastreia seleção de opção
+    const selectedOption = momentOptions.find(opt => opt.id === optionId);
+    sendGAEvent('option_selected_momento', {
+      option_id: optionId,
+      option_text: selectedOption?.text || optionId,
+      question_name: 'momento_atual'
+    });
+  };
+
   return (
     <div>
       <div data-qa="question-header" className="header-wrapper-main">
@@ -1735,7 +2033,7 @@ function MomentoContent({ elementsVisible, optionsVisible, selectedMoment, setSe
           {momentOptions.map((option: MomentOption, index: number) => (
             <button
               key={option.id}
-              onClick={() => setSelectedMoment(option.id)}
+              onClick={() => handleMomentSelection(option.id)}
               className={`
                 moment-option-button 
                 ${selectedMoment === option.id ? 'moment-option-selected' : ''}
@@ -1763,16 +2061,29 @@ function VendeuForaContent({ elementsVisible, optionsVisible, vendeuFora, setVen
   setVendeuFora: (value: string) => void;
   vendeuForaOptions: MomentOption[];
 }) {
+
+  const handleVendeuForaSelection = (optionId: string) => {
+    setVendeuFora(optionId);
+    
+    // Rastreia seleção de opção
+    const selectedOption = vendeuForaOptions.find(opt => opt.id === optionId);
+    sendGAEvent('option_selected_vendeu_fora', {
+      option_id: optionId,
+      option_text: selectedOption?.text || optionId,
+      question_name: 'vendeu_fora'
+    });
+  };
+
   return (
     <div>
       <div data-qa="question-header" className="header-wrapper-main">
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>6.</span>Você já vendeu fora do Brasil antes?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>6.</span>Você já vendeu para fora do Brasil?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Queremos saber sobre sua experiência com vendas internacionais
+              Selecione sua experiência com vendas internacionais
             </div>
           </div>
         </div>
@@ -1783,7 +2094,7 @@ function VendeuForaContent({ elementsVisible, optionsVisible, vendeuFora, setVen
           {vendeuForaOptions.map((option: MomentOption, index: number) => (
             <button
               key={option.id}
-              onClick={() => setVendeuFora(option.id)}
+              onClick={() => handleVendeuForaSelection(option.id)}
               className={`
                 moment-option-button 
                 ${vendeuFora === option.id ? 'moment-option-selected' : ''}
