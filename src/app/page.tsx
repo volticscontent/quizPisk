@@ -92,7 +92,7 @@ export default function Home() {
   // Apps Script URL - NOVA URL ATUALIZADA (v3.0 - Corrigido)
   // URL corrigida sem setHeaders para compatibilidade
   // Configuração: Versão 2 em 23 de jul. de 2025, 14:52 - Executar como: gustavosales99999@gmail.com
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_OGpFllYdoyUjVBf7f4lr7uYqg6P4SSMZk0nWZNOdR0ss9UBWRc9SC04jCy7QWzNG/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgsJU4n8CMcTj8acb3cxnY4b3PcMXKjvHazbFYfwGYc5QGOC3ozpdunywtqOFVK0pD/exec';
 
   // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
   const testAppsScriptURL = async () => {
