@@ -614,11 +614,26 @@ export default function Home() {
         error_message: String(error)
       });
     } finally {
+      // Sempre libera o estado de submitting e transição
       setIsSubmitting(false);
+      isTransitioning.current = false;
     }
     
-    // Avança para a tela final
-    nextStep();
+    // Vai diretamente para a tela final sem chamar nextStep()
+    console.log('🎊 Redirecionando para tela final...');
+    setCurrentStep('finished');
+    
+    // Inicia animação da tela final
+    setTimeout(() => {
+      initiateStepAnimation('finished');
+    }, 100);
+    
+    // Envia evento final do GA
+    sendGAEvent('quiz_complete', {
+      step_name: 'finished',
+      step_number: 14,
+      total_steps: 14
+    });
   };
 
   // Refs para controle de hydratação e animações
@@ -819,6 +834,11 @@ export default function Home() {
       setIsClient(true);
       hasHydrated.current = true;
       
+      // Reseta estados de transição na inicialização
+      isTransitioning.current = false;
+      setIsSubmitting(false);
+      setIsButtonPressed(false);
+      
       // Carrega dados salvos se existirem
       loadFromLocalStorage();
       
@@ -829,12 +849,23 @@ export default function Home() {
         referrer: typeof window !== 'undefined' ? document.referrer : ''
       });
       
-      // Inicia animação de boas-vindas apenas uma vez
+      // Inicia animação de boas-vindas imediatamente se estiver em welcome
       setTimeout(() => {
-        if (currentStep === 'welcome') {
+        if (hasHydrated.current) {
+          console.log('🎭 Iniciando animação de welcome na inicialização');
           initiateWelcomeAnimation();
         }
       }, 100);
+    }
+  }, []);
+
+  // Effect separado para limpar logs de debug após inicialização
+  useEffect(() => {
+    // Limpa os logs de debug em produção após 5 segundos
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      setTimeout(() => {
+        console.clear();
+      }, 5000);
     }
   }, []);
 
@@ -885,8 +916,13 @@ export default function Home() {
   }, []);
 
   const nextStep = () => {
-    if (isTransitioning.current) return; // Evita múltiplas execuções
+    // Proteção robusta contra múltiplas execuções
+    if (isTransitioning.current || isSubmitting) {
+      console.log('⚠️ Transição já em andamento, ignorando...');
+      return;
+    }
     
+    console.log('🔄 Iniciando transição de:', currentStep);
     isTransitioning.current = true;
     clearAllTimers();
     
@@ -944,17 +980,23 @@ export default function Home() {
           newStep = 'compromisso';
           break;
         case 'compromisso':
+          // Este caso nunca deveria ser atingido pois compromisso vai para finishQuiz
+          console.warn('⚠️ nextStep chamado no step compromisso - isso não deveria acontecer');
           newStep = 'finished';
           break;
         default:
+          console.warn('⚠️ Step não reconhecido:', currentStep);
           newStep = 'welcome';
       }
       
+      console.log('✅ Transicionando para:', newStep);
       setCurrentStep(newStep);
       
       // Permite novas transições e inicia animações de entrada
       setTimeout(() => {
         isTransitioning.current = false;
+        console.log('🎯 Transição concluída, liberando controle');
+        
         // Chama animação de entrada para o novo step
         if (newStep === 'welcome') {
           initiateWelcomeAnimation();
@@ -1044,8 +1086,9 @@ export default function Home() {
   };
 
   const handleContinue = () => {
-    // Previne múltiplas execuções
-    if (isTransitioning.current || isSubmitting) {
+    // Previne múltiplas execuções - proteção melhorada
+    // EXCEÇÃO: Para welcome, permite sempre (caso especial)
+    if ((isTransitioning.current || isSubmitting) && currentStep !== 'welcome') {
       console.log('⚠️ Ação já em andamento, aguarde...');
       return;
     }
@@ -1059,6 +1102,7 @@ export default function Home() {
     
     switch (currentStep) {
       case 'welcome':
+        console.log('🎬 Botão "Vamos lá" clicado - iniciando transição');
         nextStep();
         break;
       case 'name':
@@ -1204,6 +1248,7 @@ export default function Home() {
         break;
       case 'compromisso':
         if (compromisso) {
+          // Não libera isTransitioning aqui pois vai para finishQuiz
           finishQuiz();
         } else {
           sendGAEvent('validation_failed_no_selection', {
@@ -1232,6 +1277,7 @@ export default function Home() {
     if (isSubmitting) return true;
     
     switch (currentStep) {
+      case 'welcome': return false; // Welcome nunca é bloqueado
       case 'name': return !name.trim();
       case 'whatsapp': return !phone.trim();
       case 'email': return !email.trim();

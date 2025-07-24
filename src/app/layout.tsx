@@ -20,8 +20,11 @@ const mavenPro = Maven_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "PiscaForm - Quiz Interativo",
+  title: "Wifi-M$ney - Quiz Interativo",
   description: "Formulário em formato de quiz para consultoria estratégica",
+  icons: {
+    icon: '/logo.jpg',
+  },
 };
 
 export default function RootLayout({
