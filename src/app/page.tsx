@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
+import { useUtmTracking } from './hooks/useUtmTracking';
 
 // Configuração do Google Analytics
 declare global {
   interface Window {
     gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void;
+    nameInputTimeout?: NodeJS.Timeout;
+    phoneInputTimeout?: NodeJS.Timeout;
+    emailInputTimeout?: NodeJS.Timeout;
   }
 }
 
@@ -41,7 +45,7 @@ const sendGAPageView = (pageName: string) => {
   }
 };
 
-type QuizStep = 'welcome' | 'name' | 'whatsapp' | 'email' | 'instagram' | 'momento' | 'vendeu_fora' | 'faturamento' | 'caixa_disponivel' | 'problema_principal' | 'area_ajuda' | 'socio' | 'por_que_escolher' | 'compromisso' | 'finished';
+type QuizStep = 'name' | 'whatsapp' | 'email' | 'instagram' | 'momento' | 'vendeu_fora' | 'faturamento' | 'caixa_disponivel' | 'problema_principal' | 'area_ajuda' | 'socio' | 'por_que_escolher' | 'compromisso' | 'finished';
 
 interface Country {
   code: string;
@@ -68,13 +72,8 @@ interface WhatsAppContentProps {
   name: string;
   phone: string;
   setPhone: (phone: string) => void;
-  countryCode: string;
-  setCountryCode: (code: string) => void;
   inputFocused: boolean;
   setInputFocused: (focused: boolean) => void;
-  showCountryDropdown: boolean;
-  setShowCountryDropdown: (show: boolean) => void;
-  countries: Country[];
   handleKeyPress: (e: React.KeyboardEvent) => void;
 }
 
@@ -96,7 +95,7 @@ interface MomentoContentProps {
 }
 
 export default function Home() {
-  const [currentStep, setCurrentStep] = useState<QuizStep>('welcome');
+  const [currentStep, setCurrentStep] = useState<QuizStep>('name');
   const [isButtonPressed, setIsButtonPressed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -108,7 +107,6 @@ export default function Home() {
   // Estados dos dados do quiz
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [countryCode, setCountryCode] = useState('+55');
   const [email, setEmail] = useState('');
   const [instagram, setInstagram] = useState('');
   const [selectedMoment, setSelectedMoment] = useState('');
@@ -121,22 +119,47 @@ export default function Home() {
   const [porQueEscolher, setPorQueEscolher] = useState('');
   const [compromisso, setCompromisso] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'partial'>('idle');
 
-  // Estados de validação
-  const [nameError, setNameError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [instagramError, setInstagramError] = useState('');
-  const [isFormValid, setIsFormValid] = useState(false);
+  // Estados de validação com códigos HTTP-like
+  const [validationState, setValidationState] = useState<{
+    [key in QuizStep]?: {
+      status: 200 | 400 | 422; // 200: OK, 400: Bad Request, 422: Unprocessable Entity
+      message?: string;
+      required: boolean;
+    }
+  }>({
+    name: { status: 400, message: 'Nome completo é obrigatório', required: true },
+    whatsapp: { status: 400, message: 'Telefone válido é obrigatório', required: true },
+    email: { status: 400, message: 'Email válido é obrigatório', required: true },
+    instagram: { status: 400, message: 'Instagram é obrigatório', required: true },
+    momento: { status: 422, message: 'Selecione uma opção', required: true },
+    vendeu_fora: { status: 422, message: 'Selecione uma opção', required: true },
+    faturamento: { status: 400, message: 'Faturamento é obrigatório', required: true },
+    caixa_disponivel: { status: 422, message: 'Selecione uma opção', required: true },
+    problema_principal: { status: 422, message: 'Selecione uma opção', required: true },
+    area_ajuda: { status: 422, message: 'Selecione uma opção', required: true },
+    socio: { status: 422, message: 'Selecione uma opção', required: true },
+    por_que_escolher: { status: 400, message: 'Mínimo 10 caracteres', required: true },
+    compromisso: { status: 422, message: 'Selecione uma opção', required: true },
+    finished: { status: 200, required: false }
+  });
+
+  // Configuração para análise da IA
+  const [analysisStage, setAnalysisStage] = useState<'initial' | 'analyzing' | 'complete'>('initial');
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisText, setAnalysisText] = useState('Iniciando análise...');
 
   // Apps Script URL - ATUALIZE COM A NOVA URL DO SEU DEPLOYMENT
   // Depois de criar o novo Apps Script, substitua a URL abaixo:
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCFQ7ZIitepAbGGANoZTgUTOI_Ua5MkZsy8qSlaMw9Gb_cXsCGKpgriYmsIWW7iiaH/exec';
   const N8N_WEBHOOK_URL = 'https://n8n.landcriativa.com/webhook/84909c05-c376-4ebe-a630-7ef428ff1826';
+
+  // Hook para rastreamento UTM e Meta Pixel
+  const { trackLead } = useUtmTracking();
+
   // Função para testar a URL do Apps Script (TEMPORÁRIA - para debug)
   const testAppsScriptURL = async () => {
     console.log('🧪 Testando conexão com Apps Script...');
@@ -287,7 +310,7 @@ export default function Home() {
   const saveToLocalStorage = () => {
     const formData = {
       name,
-      phone: countryCode + phone,
+      phone: '+55' + phone, // Adiciona código do país brasileiro
       email,
       instagram,
       moment: getResponseText('moment', selectedMoment),
@@ -455,7 +478,6 @@ export default function Home() {
   // Função para mapear step para nome do evento GA
   const getGAEventName = (step: QuizStep): string => {
     const eventMap: Record<QuizStep, string> = {
-      welcome: 'quiz_start',
       name: 'pergunta_1_nome',
       whatsapp: 'pergunta_2_whatsapp', 
       email: 'pergunta_3_email',
@@ -481,7 +503,8 @@ export default function Home() {
     sendGAEvent(eventName, {
       step_name: step,
       progress_percentage: progress,
-      step_number: getStepNumber(step)
+      step_number: getStepNumber(step),
+      event_type: 'step_progress'
     });
     
     // Também envia pageview
@@ -491,7 +514,6 @@ export default function Home() {
   // Função para obter número da etapa
   const getStepNumber = (step: QuizStep): number => {
     const stepNumbers: Record<QuizStep, number> = {
-      welcome: 0,
       name: 1,
       whatsapp: 2,
       email: 3,
@@ -574,6 +596,7 @@ export default function Home() {
             destinations_successful: 2,
             total_destinations: 2
           });
+          
         } else if (successCount === 1) {
           console.log(`⚠️ Quiz enviado parcialmente (${2 - successCount} de 2 falharam: ${errorDetails.join(', ')})`);
           setSubmitStatus('partial');
@@ -582,6 +605,7 @@ export default function Home() {
             total_destinations: 2,
             failed_destinations: errorDetails.join(', ')
           });
+          
         } else {
           console.log('❌ Falha ao enviar para todos os destinos, mas dados salvos localmente');
           setSubmitStatus('partial');
@@ -589,6 +613,27 @@ export default function Home() {
             destinations_successful: 0,
             total_destinations: 2
           });
+          
+          // 🎯 ENVIAR EVENTO DE LEAD MESMO COM FALHA NO ENVIO (dados salvos localmente)
+          // trackLead({
+          //   content_name: 'Quiz PiscaForm Completo (Falha no Envio)',
+          //   content_category: 'Lead Generation',
+          //   currency: 'BRL',
+          //   value: 0.5, // Valor menor por falha no envio
+          //   lead_type: 'quiz_completion_failed_submission',
+          //   form_name: 'PiscaForm - Quiz Interativo',
+          //   user_name: formData.name,
+          //   user_email: formData.email,
+          //   user_phone: formData.phone,
+          //   user_instagram: formData.instagram,
+          //   business_revenue: formData.faturamento,
+          //   business_moment: formData.moment,
+          //   main_problem: formData.problemaPrincipal,
+          //   help_area: formData.areaAjuda,
+          //   has_partner: formData.possuiSocio,
+          //   completion_timestamp: formData.submittedAt,
+          //   submission_status: 'failed'
+          // });
         }
         
         // Opcional: mostrar notificação de sucesso
@@ -702,16 +747,14 @@ export default function Home() {
 
   // Função para calcular o progresso baseado no step atual
   const getProgressForStep = (step: QuizStep): number => {
-    const steps = ['welcome', 'name', 'whatsapp', 'email', 'instagram', 'momento', 'vendeu_fora', 'faturamento', 'caixa_disponivel', 'problema_principal', 'area_ajuda', 'socio', 'por_que_escolher', 'compromisso', 'finished'];
+    const steps = ['name', 'whatsapp', 'email', 'instagram', 'momento', 'vendeu_fora', 'faturamento', 'caixa_disponivel', 'problema_principal', 'area_ajuda', 'socio', 'por_que_escolher', 'compromisso', 'finished'];
     const currentIndex = steps.indexOf(step);
     return Math.round((currentIndex / (steps.length - 1)) * 100);
   };
 
-
-
   // Função para limpar todos os timers
   const clearAllTimers = () => {
-    animationTimers.current.forEach(timer => clearTimeout(timer));
+    animationTimers.current.forEach((timer: NodeJS.Timeout) => clearTimeout(timer));
     animationTimers.current = [];
   };
 
@@ -811,12 +854,11 @@ export default function Home() {
         setPorQueEscolher(formData.porQueEscolher || '');
         setCompromisso(formData.compromisso || '');
         
-        // Para o telefone, separa o código do país
+        // Para o telefone, remove o código do país se estiver presente
         if (formData.phone) {
-          const phoneMatch = formData.phone.match(/^(\+\d+)(.+)$/);
+          const phoneMatch = formData.phone.match(/^(\+55)?(.+)$/);
           if (phoneMatch) {
-            setCountryCode(phoneMatch[1]);
-            setPhone(phoneMatch[2]);
+            setPhone(phoneMatch[2]); // Pega apenas os dígitos sem o código do país
           }
         }
         
@@ -903,15 +945,18 @@ export default function Home() {
     sendProgressEvent(currentStep, newProgress);
   }, [currentStep]);
 
-
-
-
-
   // Cleanup effect - limpa todos os timers ao desmontar
   useEffect(() => {
     return () => {
       isMounted.current = false;
       clearAllTimers();
+      
+      // Limpa timeouts de input para evitar vazamentos de memória
+      if (typeof window !== 'undefined') {
+        clearTimeout(window.nameInputTimeout);
+        clearTimeout(window.phoneInputTimeout);
+        clearTimeout(window.emailInputTimeout);
+      }
     };
   }, []);
 
@@ -926,12 +971,6 @@ export default function Home() {
     isTransitioning.current = true;
     clearAllTimers();
     
-    // Envia evento de conclusão da etapa atual
-    sendGAEvent(`${getGAEventName(currentStep)}_completed`, {
-      step_name: currentStep,
-      step_number: getStepNumber(currentStep)
-    });
-    
     // Animação de saída apenas do conteúdo
     setContentVisible(false);
     setOptionsVisible(false);
@@ -940,9 +979,6 @@ export default function Home() {
       let newStep: QuizStep;
       
       switch (currentStep) {
-        case 'welcome':
-          newStep = 'name';
-          break;
         case 'name':
           newStep = 'whatsapp';
           break;
@@ -986,7 +1022,7 @@ export default function Home() {
           break;
         default:
           console.warn('⚠️ Step não reconhecido:', currentStep);
-          newStep = 'welcome';
+          newStep = 'name';
       }
       
       console.log('✅ Transicionando para:', newStep);
@@ -998,11 +1034,7 @@ export default function Home() {
         console.log('🎯 Transição concluída, liberando controle');
         
         // Chama animação de entrada para o novo step
-        if (newStep === 'welcome') {
-          initiateWelcomeAnimation();
-        } else {
           initiateStepAnimation(newStep);
-        }
       }, 200);
     }, 100);
   };
@@ -1021,9 +1053,6 @@ export default function Home() {
       let newStep: QuizStep;
       
       switch (currentStep) {
-        case 'name':
-          newStep = 'welcome';
-          break;
         case 'whatsapp':
           newStep = 'name';
           break;
@@ -1061,7 +1090,7 @@ export default function Home() {
           newStep = 'por_que_escolher';
           break;
         default:
-          newStep = 'welcome';
+          newStep = 'name';
       }
       
       setCurrentStep(newStep);
@@ -1070,11 +1099,7 @@ export default function Home() {
       setTimeout(() => {
         isTransitioning.current = false;
         // Chama animação de entrada para o novo step
-        if (newStep === 'welcome') {
-          initiateWelcomeAnimation();
-        } else {
           initiateStepAnimation(newStep);
-        }
       }, 200);
     }, 100);
   };
@@ -1085,184 +1110,253 @@ export default function Home() {
     }
   };
 
+  // Função simples para validar step atual
+  const isCurrentStepValid = useCallback((): boolean => {
+    switch (currentStep) {
+      case 'name':
+        return name.trim().length >= 2 && 
+               /^[a-zA-ZÀ-ÿ\s\-']+$/.test(name.trim()) &&
+               name.trim().split(/\s+/).length >= 2 &&
+               name.trim().split(/\s+/).every((part: string) => part.length >= 2);
+
+      case 'whatsapp': {
+        const phoneClean = phone.replace(/[\s\(\)\-]/g, '');
+        // Validação para números brasileiros
+        if (phoneClean.length < 8 || phoneClean.length > 11 || !/^\d+$/.test(phoneClean)) return false;
+        
+        if (phoneClean.length === 8) {
+          return /^[2-5]/.test(phoneClean) && !/^(\d)\1+$/.test(phoneClean);
+        } else if (phoneClean.length === 9) {
+          return phoneClean.startsWith('9') && !/^(\d)\1+$/.test(phoneClean);
+        } else if (phoneClean.length === 10) {
+          const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+          const ddd = phoneClean.substring(0, 2);
+          const numero = phoneClean.substring(2);
+          return validDDDs.includes(ddd) && /^[2-5]/.test(numero) && !/^(\d)\1+$/.test(phoneClean);
+        } else if (phoneClean.length === 11) {
+          const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+          const ddd = phoneClean.substring(0, 2);
+          const nono = phoneClean[2];
+          return validDDDs.includes(ddd) && nono === '9' && !/^(\d)\1+$/.test(phoneClean);
+        }
+        return false;
+      }
+
+      case 'email':
+        return email.trim().length > 0 && 
+               /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+               email.trim().split('@')[0].length >= 3 &&
+               email.trim().split('@')[1].split('.')[0].length >= 2 &&
+               (email.trim().split('@')[1].split('.').pop()?.length || 0) >= 2;
+
+      case 'instagram':
+        return instagram.trim().length > 0;
+
+      case 'momento':
+        return selectedMoment.trim().length > 0;
+
+      case 'vendeu_fora':
+        return vendeuFora.trim().length > 0;
+
+      case 'faturamento':
+        return faturamento.trim().length > 0;
+
+      case 'caixa_disponivel':
+        return caixaDisponivel.trim().length > 0;
+
+      case 'problema_principal':
+        return problemaPrincipal.trim().length > 0;
+
+      case 'area_ajuda':
+        return areaAjuda.trim().length > 0;
+
+      case 'socio':
+        return possuiSocio.trim().length > 0;
+
+      case 'por_que_escolher':
+        return porQueEscolher.trim().length >= 10;
+
+      case 'compromisso':
+        return compromisso.trim().length > 0;
+
+      default:
+        return true;
+    }
+  }, [currentStep, name, phone, email, instagram, selectedMoment, vendeuFora, faturamento, caixaDisponivel, problemaPrincipal, areaAjuda, possuiSocio, porQueEscolher, compromisso]);
+
+  // Função para atualizar estado de validação
+  const updateValidationState = useCallback((step: QuizStep, status: 200 | 400 | 422, message?: string) => {
+    setValidationState((prev: { [key in QuizStep]?: { status: 200 | 400 | 422; message?: string; required: boolean; } }) => ({
+      ...prev,
+      [step]: {
+        ...prev[step],
+        status,
+        message
+      }
+    }));
+  }, []);
+
+  // Effect para monitorar mudanças e atualizar validação em tempo real
+  useEffect(() => {
+    const validation = isCurrentStepValid();
+    const newStatus = validation ? 200 : (validation ? 400 : 422);
+    
+    updateValidationState(currentStep, newStatus, validation ? undefined : 'Dados inválidos');
+    
+    // Log para debug
+    console.log(`🔍 Validação ${currentStep}:`, {
+      status: newStatus,
+      isValid: validation,
+      message: validation ? undefined : 'Dados inválidos'
+    });
+  }, [currentStep, name, phone, email, instagram, selectedMoment, vendeuFora, faturamento, caixaDisponivel, problemaPrincipal, areaAjuda, possuiSocio, porQueEscolher, compromisso, isCurrentStepValid, updateValidationState]);
+
   const handleContinue = () => {
     // Previne múltiplas execuções - proteção melhorada
-    // EXCEÇÃO: Para welcome, permite sempre (caso especial)
-    if ((isTransitioning.current || isSubmitting) && currentStep !== 'welcome') {
+    if (isTransitioning.current || isSubmitting) {
       console.log('⚠️ Ação já em andamento, aguarde...');
       return;
     }
 
-    // Rastreia clique no botão continuar
+    // Validação simples para cada step
+    let canProceed = false;
+    let errorMessage = '';
+
+    switch (currentStep) {
+      case 'name':
+        const nameValid = name.trim().length >= 2 && 
+                         /^[a-zA-ZÀ-ÿ\s\-']+$/.test(name.trim()) &&
+                         name.trim().split(/\s+/).length >= 2 &&
+                         name.trim().split(/\s+/).every((part: string) => part.length >= 2);
+        canProceed = nameValid;
+        errorMessage = nameValid ? '' : 'Digite seu nome completo (nome e sobrenome)';
+        break;
+
+      case 'whatsapp':
+        const phoneClean = phone.replace(/[\s\(\)\-]/g, '');
+        let phoneValid = false;
+        
+        // Validação para números brasileiros
+        if (phoneClean.length >= 8 && phoneClean.length <= 11 && /^\d+$/.test(phoneClean)) {
+          if (phoneClean.length === 8) {
+            phoneValid = /^[2-5]/.test(phoneClean) && !/^(\d)\1+$/.test(phoneClean);
+          } else if (phoneClean.length === 9) {
+            phoneValid = phoneClean.startsWith('9') && !/^(\d)\1+$/.test(phoneClean);
+          } else if (phoneClean.length === 10) {
+            const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+            const ddd = phoneClean.substring(0, 2);
+            const numero = phoneClean.substring(2);
+            phoneValid = validDDDs.includes(ddd) && /^[2-5]/.test(numero) && !/^(\d)\1+$/.test(phoneClean);
+          } else if (phoneClean.length === 11) {
+            const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+            const ddd = phoneClean.substring(0, 2);
+            const nono = phoneClean[2];
+            phoneValid = validDDDs.includes(ddd) && nono === '9' && !/^(\d)\1+$/.test(phoneClean);
+          }
+        }
+        canProceed = phoneValid;
+        errorMessage = phoneValid ? '' : 'Digite um número de telefone válido';
+        break;
+
+      case 'email':
+        const emailValid = email.trim().length > 0 && 
+                          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+                          email.trim().split('@')[0].length >= 3 &&
+                          email.trim().split('@')[1].split('.')[0].length >= 2 &&
+                          (email.trim().split('@')[1].split('.').pop()?.length || 0) >= 2;
+        canProceed = emailValid;
+        errorMessage = emailValid ? '' : 'Digite um email válido';
+        break;
+
+      case 'instagram':
+        canProceed = instagram.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Digite seu Instagram';
+        break;
+
+      case 'momento':
+        canProceed = selectedMoment.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Selecione uma opção';
+        break;
+
+      case 'vendeu_fora':
+        canProceed = vendeuFora.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Selecione uma opção';
+        break;
+
+      case 'faturamento':
+        canProceed = faturamento.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Digite seu faturamento';
+        break;
+
+      case 'caixa_disponivel':
+        canProceed = caixaDisponivel.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Selecione uma opção';
+        break;
+
+      case 'problema_principal':
+        canProceed = problemaPrincipal.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Selecione uma opção';
+        break;
+
+      case 'area_ajuda':
+        canProceed = areaAjuda.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Selecione uma opção';
+        break;
+
+      case 'socio':
+        canProceed = possuiSocio.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Selecione uma opção';
+        break;
+
+      case 'por_que_escolher':
+        canProceed = porQueEscolher.trim().length >= 10;
+        errorMessage = canProceed ? '' : 'Escreva pelo menos 10 caracteres';
+        break;
+
+      case 'compromisso':
+        canProceed = compromisso.trim().length > 0;
+        errorMessage = canProceed ? '' : 'Selecione uma opção';
+        break;
+
+      default:
+        canProceed = true;
+    }
+
+    // Se validação falhar, mostra erro e bloqueia
+    if (!canProceed) {
+      console.log(`🚫 Validação falhou: ${errorMessage}`);
+      alert(`❌ ${errorMessage}`);
+      return;
+    }
+
+    // Rastreia clique no botão continuar APENAS quando válido
     sendGAEvent('button_continue_clicked', {
       current_step: currentStep,
       step_number: getStepNumber(currentStep),
       progress_percentage: getProgressForStep(currentStep)
     });
-    
-    switch (currentStep) {
-      case 'welcome':
-        console.log('🎬 Botão "Vamos lá" clicado - iniciando transição');
-        nextStep();
-        break;
-      case 'name':
-        if (name.trim()) {
-          sendGAEvent('field_validation_passed', {
-            field_name: 'name',
-            field_value_length: name.trim().length
-          });
-          nextStep();
-        } else {
-          sendGAEvent('field_validation_failed', {
-            field_name: 'name',
-            error_type: 'empty'
-          });
-        }
-        break;
-      case 'whatsapp':
-        if (phone.trim()) {
-          sendGAEvent('field_validation_passed', {
-            field_name: 'phone',
-            field_value_length: phone.trim().length,
-            country_code: countryCode
-          });
-          nextStep();
-        } else {
-          sendGAEvent('field_validation_failed', {
-            field_name: 'phone',
-            error_type: 'empty'
-          });
-        }
-        break;
-      case 'email':
-        if (email.trim()) {
-          sendGAEvent('field_validation_passed', {
-            field_name: 'email',
-            email_domain: email.split('@')[1] || ''
-          });
-          nextStep();
-        } else {
-          sendGAEvent('field_validation_failed', {
-            field_name: 'email',
-            error_type: 'empty'
-          });
-        }
-        break;
-      case 'instagram':
-        if (instagram.trim()) {
-          sendGAEvent('field_validation_passed', {
-            field_name: 'instagram',
-            field_value_length: instagram.trim().length
-          });
-          nextStep();
-        } else {
-          sendGAEvent('field_validation_failed', {
-            field_name: 'instagram',
-            error_type: 'empty'
-          });
-        }
-        break;
-      case 'momento':
-        if (selectedMoment) {
-          nextStep();
-        } else {
-          sendGAEvent('validation_failed_no_selection', {
-            question_name: 'momento'
-          });
-        }
-        break;
-      case 'vendeu_fora':
-        if (vendeuFora) {
-          nextStep();
-        } else {
-          sendGAEvent('validation_failed_no_selection', {
-            question_name: 'vendeu_fora'
-          });
-        }
-        break;
-      case 'faturamento':
-        if (faturamento.trim()) {
-          sendGAEvent('field_validation_passed', {
-            field_name: 'faturamento',
-            field_value_length: faturamento.trim().length
-          });
-          nextStep();
-        } else {
-          sendGAEvent('field_validation_failed', {
-            field_name: 'faturamento',
-            error_type: 'empty'
-          });
-        }
-        break;
-      case 'caixa_disponivel':
-        if (caixaDisponivel) {
-          nextStep();
-        } else {
-          sendGAEvent('validation_failed_no_selection', {
-            question_name: 'caixa_disponivel'
-          });
-        }
-        break;
-      case 'problema_principal':
-        if (problemaPrincipal) {
-          nextStep();
-        } else {
-          sendGAEvent('validation_failed_no_selection', {
-            question_name: 'problema_principal'
-          });
-        }
-        break;
-      case 'area_ajuda':
-        if (areaAjuda) {
-          nextStep();
-        } else {
-          sendGAEvent('validation_failed_no_selection', {
-            question_name: 'area_ajuda'
-          });
-        }
-        break;
-      case 'socio':
-        if (possuiSocio) {
-          nextStep();
-        } else {
-          sendGAEvent('validation_failed_no_selection', {
-            question_name: 'socio'
-          });
-        }
-        break;
-      case 'por_que_escolher':
-        if (porQueEscolher.trim() && porQueEscolher.trim().length >= 50) {
-          sendGAEvent('field_validation_passed', {
-            field_name: 'por_que_escolher',
-            field_value_length: porQueEscolher.trim().length
-          });
-          nextStep();
-        } else {
-          sendGAEvent('field_validation_failed', {
-            field_name: 'por_que_escolher',
-            error_type: porQueEscolher.trim().length === 0 ? 'empty' : 'too_short',
-            current_length: porQueEscolher.trim().length,
-            required_length: 50
-          });
-        }
-        break;
-      case 'compromisso':
-        if (compromisso) {
-          // Não libera isTransitioning aqui pois vai para finishQuiz
-          finishQuiz();
-        } else {
-          sendGAEvent('validation_failed_no_selection', {
-            question_name: 'compromisso'
-          });
-        }
-        break;
+
+    // Caso especial para compromisso (vai para finishQuiz)
+    if (currentStep === 'compromisso') {
+      sendGAEvent('field_validation_passed', {
+        field_name: 'compromisso',
+        selected_option: compromisso
+      });
+      finishQuiz();
+      return;
     }
+
+    // Para outros steps, continua normalmente
+    sendGAEvent('field_validation_passed', {
+      field_name: currentStep,
+      step_number: getStepNumber(currentStep)
+    });
+    
+    nextStep();
   };
 
   const getButtonText = () => {
     switch (currentStep) {
-      case 'welcome':
-        return 'Vamos lá';
       case 'finished':
         return 'Finalizar';
       default:
@@ -1270,110 +1364,82 @@ export default function Home() {
     }
   };
 
-
-
-  const isButtonDisabled = () => {
+  const isButtonDisabled = useMemo(() => {
     // Se está enviando, desabilita o botão
     if (isSubmitting) return true;
     
+    // Validação simples para desabilitar botão
     switch (currentStep) {
-      case 'welcome': return false; // Welcome nunca é bloqueado
-      case 'name': return !name.trim();
-      case 'whatsapp': return !phone.trim();
-      case 'email': return !email.trim();
-      case 'instagram': return !instagram.trim();
-      case 'momento': return !selectedMoment;
-      case 'vendeu_fora': return !vendeuFora;
-      case 'faturamento': return !faturamento.trim();
-      case 'caixa_disponivel': return !caixaDisponivel;
-      case 'problema_principal': return !problemaPrincipal;
-      case 'area_ajuda': return !areaAjuda;
-      case 'socio': return !possuiSocio;
-      case 'por_que_escolher': return !porQueEscolher.trim() || porQueEscolher.trim().length < 50;
-      case 'compromisso': return !compromisso;
-      default: return false;
-    }
-  };
+      case 'name':
+        return !(name.trim().length >= 2 && 
+                /^[a-zA-ZÀ-ÿ\s\-']+$/.test(name.trim()) &&
+                name.trim().split(/\s+/).length >= 2 &&
+                name.trim().split(/\s+/).every((part: string) => part.length >= 2));
 
-  // Funções de validação em tempo real
-  const validateName = (value: string) => {
-    if (!value.trim()) {
-      setNameError('Nome é obrigatório');
-      return false;
-    }
-    if (value.trim().length < 2) {
-      setNameError('Nome deve ter pelo menos 2 caracteres');
-      return false;
-    }
-    if (value.trim().length > 100) {
-      setNameError('Nome muito longo (máximo 100 caracteres)');
-      return false;
-    }
-    if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(value.trim())) {
-      setNameError('Nome deve conter apenas letras');
-      return false;
-    }
-    setNameError('');
-    return true;
-  };
+      case 'whatsapp': {
+        const phoneClean = phone.replace(/[\s\(\)\-]/g, '');
+        // Validação para números brasileiros
+        if (phoneClean.length < 8 || phoneClean.length > 11 || !/^\d+$/.test(phoneClean)) return true;
+        
+        if (phoneClean.length === 8) {
+          return !(/^[2-5]/.test(phoneClean) && !/^(\d)\1+$/.test(phoneClean));
+        } else if (phoneClean.length === 9) {
+          return !(phoneClean.startsWith('9') && !/^(\d)\1+$/.test(phoneClean));
+        } else if (phoneClean.length === 10) {
+          const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+            const ddd = phoneClean.substring(0, 2);
+            const numero = phoneClean.substring(2);
+            return !(validDDDs.includes(ddd) && /^[2-5]/.test(numero) && !/^(\d)\1+$/.test(phoneClean));
+          } else if (phoneClean.length === 11) {
+            const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+            const ddd = phoneClean.substring(0, 2);
+            const nono = phoneClean[2];
+            return !(validDDDs.includes(ddd) && nono === '9' && !/^(\d)\1+$/.test(phoneClean));
+          }
+        return true;
+      }
 
-  const validateEmail = (value: string) => {
-    if (!value.trim()) {
-      setEmailError('Email é obrigatório');
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value.trim())) {
-      setEmailError('Email inválido (exemplo: usuario@dominio.com)');
-      return false;
-    }
-    setEmailError('');
-    return true;
-  };
+      case 'email':
+        return !(email.trim().length > 0 && 
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+                email.trim().split('@')[0].length >= 3 &&
+                email.trim().split('@')[1].split('.')[0].length >= 2 &&
+                (email.trim().split('@')[1].split('.').pop()?.length || 0) >= 2);
 
-  const validatePhone = (value: string) => {
-    if (!value.trim()) {
-      setPhoneError('Telefone é obrigatório');
-      return false;
-    }
-    const phoneClean = value.replace(/[\s\(\)\-]/g, '');
-    if (!/^\d{10,11}$/.test(phoneClean)) {
-      setPhoneError('Telefone deve ter 10 ou 11 dígitos (ex: 11999887766)');
-      return false;
-    }
-    setPhoneError('');
-    return true;
-  };
+      case 'instagram':
+        return !instagram.trim();
 
-  const validateInstagram = (value: string) => {
-    if (!value.trim()) {
-      setInstagramError('Instagram é obrigatório');
-      return false;
-    }
-    const instaClean = value.replace('@', '').trim();
-    if (instaClean.length < 3 || instaClean.length > 30) {
-      setInstagramError('Instagram deve ter entre 3 e 30 caracteres');
-      return false;
-    }
-    if (!/^[a-zA-Z0-9_.]+$/.test(instaClean)) {
-      setInstagramError('Instagram deve conter apenas letras, números, _ e .');
-      return false;
-    }
-    setInstagramError('');
-    return true;
-  };
+      case 'momento':
+        return !selectedMoment.trim();
 
-  // Função para validar formulário completo
-  const validateForm = () => {
-    const nameValid = validateName(name);
-    const emailValid = validateEmail(email);
-    const phoneValid = validatePhone(phone);
-    const instagramValid = validateInstagram(instagram);
-    
-    const formValid = nameValid && emailValid && phoneValid && instagramValid;
-    setIsFormValid(formValid);
-    return formValid;
-  };
+      case 'vendeu_fora':
+        return !vendeuFora.trim();
+
+      case 'faturamento':
+        return !faturamento.trim();
+
+      case 'caixa_disponivel':
+        return !caixaDisponivel.trim();
+
+      case 'problema_principal':
+        return !problemaPrincipal.trim();
+
+      case 'area_ajuda':
+        return !areaAjuda.trim();
+
+      case 'socio':
+        return !possuiSocio.trim();
+
+      case 'por_que_escolher':
+        return porQueEscolher.trim().length < 10;
+
+      case 'compromisso':
+        return !compromisso.trim();
+
+      default:
+        return false;
+    }
+  }, [currentStep, isSubmitting, name, phone, email, instagram, selectedMoment, vendeuFora, faturamento, caixaDisponivel, problemaPrincipal, areaAjuda, possuiSocio, porQueEscolher, compromisso]);
 
   if (!isClient) {
     return null;
@@ -1399,24 +1465,6 @@ export default function Home() {
         ></div>
       </div>
 
-      {/* Loading Screen */}
-      {currentStep === 'welcome' && (
-        <div className={`loading-screen ${!isLoading ? 'fade-out' : ''}`} suppressHydrationWarning={true}>
-          <div className="loading-wifi-corner">
-            <div className="wifi-bar"></div>
-            <div className="wifi-bar"></div>
-            <div className="wifi-bar"></div>
-          </div>
-          <div className="loading-content">
-            <div className="loading-logo">
-              <Image src="/lgSemFundo.png" alt="Logo" width={120} height={120} priority />
-            </div>
-            <div className="loading-text">Conectando...</div>
-            <div className="loading-subtext">Preparando sua experiência</div>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className={`geometric-bg relative min-h-screen flex flex-col ${backgroundLoaded ? 'content-fade-in' : 'content-hidden'}`}>
         {/* WiFi Signal Animation - Desktop only */}
@@ -1435,24 +1483,11 @@ export default function Home() {
         <div className={`floating-currency currency-6 ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.7s' }}>₿</div>
         
         {/* Header com logo */}
-        <header className={`absolute top-4 left-4 z-50 ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.1s' }}>
+        <header className={`absolute mb-25 top-4 left-4 z-50 ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center">
             <Image src="/lgSemFundo.png" alt="Logo" width={65} height={65} priority />
           </div>
         </header>
-
-        {/* Back Button - Só mostra se não estiver na tela inicial */}
-        {currentStep !== 'welcome' && currentStep !== 'finished' && (
-          <button 
-            onClick={previousStep}
-            className={`absolute top-4 right-4 z-10 p-2 text-white hover:text-orange-400 transition-all duration-300 hover:scale-110 ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`}
-            style={{ animationDelay: '0.2s' }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        )}
 
         {/* Content Wrapper */}
         <div className={`content-wrapper-main ${elementsVisible ? 'content-slide-up' : 'content-hidden'}`}>
@@ -1461,10 +1496,6 @@ export default function Home() {
               <div data-qa="question-wrapper" className="question-wrapper-main">
                 
                 {/* Conteúdo dinâmico baseado no step atual */}
-                {currentStep === 'welcome' && (
-                  <WelcomeContent elementsVisible={contentVisible} />
-                )}
-                
                 {currentStep === 'name' && (
                   <NameContent 
                     elementsVisible={contentVisible}
@@ -1482,13 +1513,8 @@ export default function Home() {
                     name={name}
                     phone={phone}
                     setPhone={setPhone}
-                    countryCode={countryCode}
-                    setCountryCode={setCountryCode}
                     inputFocused={inputFocused}
                     setInputFocused={setInputFocused}
-                    showCountryDropdown={showCountryDropdown}
-                    setShowCountryDropdown={setShowCountryDropdown}
-                    countries={countries}
                     handleKeyPress={handleKeyPress}
                   />
                 )}
@@ -1615,13 +1641,14 @@ export default function Home() {
                   />
                 )}
 
-
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer com Botão - Formato Typeform Original */}
+        {/* Esconde o botão durante a análise da IA */}
+        {!(currentStep === 'finished' && ((submitStatus === 'success' || submitStatus === 'partial') && !isSubmitting)) && (
         <div className="footer-wrapperstyles__FooterWrapper-sc-12dpj1x-0 jGEmmb">
           <div data-qa="persistent-footer" className="persistent-footercomponent__PersistentFooterWrapper-sc-171bwtp-0 jTdQsH">
             <div color="#000000" className="persistent-footercomponent__TransparentBackground-sc-171bwtp-1 cgqYMs"></div>
@@ -1629,13 +1656,13 @@ export default function Home() {
               <div className="persistent-footercomponent__ButtonsWrapper-sc-171bwtp-3 bYGfZr">
                 <button 
                   data-qa="ok-button-visible-deep-purple-ok-button-visible" 
-                  className={`ButtonWrapper-sc-__sc-1qu8p4z-0 eTknZ ${isButtonPressed ? 'button-pressed' : ''} ${isButtonDisabled() ? 'button-disabled' : ''}`}
+                    className={`ButtonWrapper-sc-__sc-1qu8p4z-0 eTknZ ${isButtonPressed ? 'button-pressed' : ''} ${isButtonDisabled ? 'button-disabled' : ''}`}
                   onClick={handleContinue}
                   onKeyDown={handleKeyPress}
-                  onMouseDown={() => !isButtonDisabled() && setIsButtonPressed(true)}
+                    onMouseDown={() => !isButtonDisabled && setIsButtonPressed(true)}
                   onMouseUp={() => setIsButtonPressed(false)}
                   onMouseLeave={() => setIsButtonPressed(false)}
-                  disabled={isButtonDisabled()}
+                    disabled={isButtonDisabled}
                 >
                   <div className="ButtonBackground-sc-__sc-1qu8p4z-1 hlUeyE"></div>
                   <span className="FlexWrapper-sc-__sc-1qu8p4z-2 bnIfYq">
@@ -1650,6 +1677,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </>
   );
@@ -1688,19 +1716,13 @@ function WelcomeContent({ elementsVisible }: { elementsVisible: boolean }) {
   );
 }
 
-function NameContent({ elementsVisible, name, setName, inputFocused, setInputFocused, handleKeyPress }: {
-  elementsVisible: boolean;
-  name: string;
-  setName: (name: string) => void;
-  inputFocused: boolean;
-  setInputFocused: (focused: boolean) => void;
-  handleKeyPress: (e: React.KeyboardEvent) => void;
-}) {
+function NameContent({ elementsVisible, name, setName, inputFocused, setInputFocused, handleKeyPress }: NameContentProps) {
   const [nameError, setNameError] = useState('');
+  const [showError, setShowError] = useState(false);
 
-  const validateName = (value: string) => {
+  const validateName = useCallback((value: string) => {
     if (!value.trim()) {
-      setNameError('Nome é obrigatório');
+      setNameError('Nome é obrigatório para continuar');
       return false;
     }
     if (value.trim().length < 2) {
@@ -1711,35 +1733,79 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
       setNameError('Nome muito longo (máximo 100 caracteres)');
       return false;
     }
-    if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(value.trim())) {
-      setNameError('Nome deve conter apenas letras');
+    if (!/^[a-zA-ZÀ-ÿ\s\-']+$/.test(value.trim())) {
+      setNameError('Nome deve conter apenas letras, espaços, hífens e apostrofes');
       return false;
     }
+    
+    // Verifica se tem pelo menos um nome e um sobrenome
+    const nameParts = value.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      setNameError('Digite seu nome completo (nome e sobrenome)');
+      return false;
+    }
+    
+    // Verifica se cada parte tem pelo menos 2 caracteres
+    if (nameParts.some(part => part.length < 2)) {
+      setNameError('Nome e sobrenome devem ter pelo menos 2 caracteres cada');
+      return false;
+    }
+    
     setNameError('');
     return true;
-  };
+  }, []);
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const isNameValid = useMemo(() => {
+    if (!name.trim()) return false;
+    if (name.trim().length < 2) return false;
+    if (name.trim().length > 100) return false;
+    if (!/^[a-zA-ZÀ-ÿ\s\-']+$/.test(name.trim())) return false;
+    
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length < 2) return false;
+    if (nameParts.some(part => part.length < 2)) return false;
+    
+    return true;
+  }, [name]);
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setName(value);
-    validateName(value);
+    setShowError(false); // Remove erro enquanto está digitando
     
-    // Rastreia evento de preenchimento do nome
-    if (value.length >= 2) {
-      sendGAEvent('field_filled_name', {
-        field_name: 'name',
-        character_count: value.length,
-        is_valid: validateName(value)
-      });
+    // Valida em tempo real após 3 caracteres
+    if (value.length >= 3) {
+    validateName(value);
+    } else if (value.length === 0) {
+      setNameError('Nome é obrigatório para continuar');
     }
-  };
+    
+    // Rastreia evento de preenchimento do nome apenas se válido
+    if (value.length >= 2 && validateName(value)) {
+      // Debounce para evitar spam de eventos
+      clearTimeout(window.nameInputTimeout);
+      window.nameInputTimeout = setTimeout(() => {
+        sendGAEvent('field_filled_name', {
+          field_name: 'name',
+          character_count: value.length,
+          is_valid: true
+        });
+      }, 1000); // Envia evento apenas 1 segundo após parar de digitar
+    }
+  }, [setName, validateName]);
 
-  const handleNameFocus = () => {
+  const handleNameFocus = useCallback(() => {
     setInputFocused(true);
     sendGAEvent('field_focused_name', {
       field_name: 'name'
     });
-  };
+  }, [setInputFocused]);
+
+  const handleNameBlur = useCallback(() => {
+    setInputFocused(false);
+    setShowError(true); // Mostra erro quando sai do campo
+    validateName(name);
+  }, [setInputFocused, validateName, name]);
 
   return (
     <div>
@@ -1747,10 +1813,10 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>1.</span>Qual é o seu nome?*
+              <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>1.</span>Qual é o seu nome completo?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Digite seu nome completo
+              Digite seu nome e sobrenome (obrigatório para continuar)
             </div>
           </div>
         </div>
@@ -1763,17 +1829,24 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
             value={name}
             onChange={handleNameChange}
             onFocus={handleNameFocus}
-            onBlur={() => setInputFocused(false)}
+            onBlur={handleNameBlur}
             onKeyDown={handleKeyPress}
-            placeholder="Seu nome completo"
-            className={`form-input-main ${nameError ? 'input-error' : ''}`}
+            placeholder="Digite seu nome completo (ex: João Silva)"
+            className={`form-input-main ${nameError && showError ? 'input-error' : isNameValid ? 'input-success' : ''}`}
             autoFocus
             maxLength={100}
+            required
           />
-          {nameError && (
+          {nameError && showError && (
             <div className="error-message">
               <span className="error-icon">⚠️</span>
               {nameError}
+            </div>
+          )}
+          {isNameValid && (
+            <div className="success-message">
+              <span className="success-icon">✅</span>
+              Nome válido!
             </div>
           )}
         </div>
@@ -1782,49 +1855,168 @@ function NameContent({ elementsVisible, name, setName, inputFocused, setInputFoc
   );
 }
 
-function WhatsAppContent({ elementsVisible, name, phone, setPhone, countryCode, setCountryCode, inputFocused, setInputFocused, showCountryDropdown, setShowCountryDropdown, countries, handleKeyPress }: WhatsAppContentProps) {
+function WhatsAppContent({ elementsVisible, name, phone, setPhone, inputFocused, setInputFocused, handleKeyPress }: WhatsAppContentProps) {
   const [phoneError, setPhoneError] = useState('');
+  const [showError, setShowError] = useState(false);
+  
+  // Código do país fixo para Brasil
+  const countryCode = '+55';
 
-  const validatePhone = (value: string) => {
+  const validatePhone = useCallback((value: string) => {
     if (!value.trim()) {
-      setPhoneError('Telefone é obrigatório');
+      setPhoneError('Telefone é obrigatório para continuar');
       return false;
     }
+    
     const phoneClean = value.replace(/[\s\(\)\-]/g, '');
-    if (!/^\d{10,11}$/.test(phoneClean)) {
-      setPhoneError('Telefone deve ter 10 ou 11 dígitos (ex: 11999887766)');
+    
+    // Validação específica para Brasil
+    if (!/^\d{8,11}$/.test(phoneClean)) {
+      setPhoneError('Telefone brasileiro deve ter 8 a 11 dígitos (ex: 31982354127 ou 1133334444)');
       return false;
     }
+    
+    // Se tem 11 dígitos, verifica se é celular (deve começar com 9 após o DDD)
+    if (phoneClean.length === 11 && phoneClean[2] !== '9') {
+      setPhoneError('Celular de 11 dígitos deve começar com 9 após o DDD (ex: 31982354127)');
+      return false;
+    }
+    
+    // Se tem 10 ou 11 dígitos, verifica DDDs válidos
+    if (phoneClean.length >= 10) {
+      const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+      const ddd = phoneClean.substring(0, 2);
+      if (!validDDDs.includes(ddd)) {
+        setPhoneError('DDD inválido para Brasil');
+        return false;
+      }
+    }
+    
+    // Verifica se não são todos os mesmos dígitos
+    if (/^(\d)\1+$/.test(phoneClean)) {
+      setPhoneError('Digite um número de telefone válido');
+      return false;
+    }
+    
     setPhoneError('');
     return true;
-  };
+  }, []);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^\d\s\-\(\)]/g, '');
-    setPhone(value);
-    validatePhone(value);
+  const formatPhoneDisplay = useCallback((value: string) => {
+    const phoneClean = value.replace(/[\s\(\)\-]/g, '');
     
-    // Rastreia evento de preenchimento do telefone
-    if (value.length >= 8) {
-      sendGAEvent('field_filled_phone', {
-        field_name: 'phone',
-        character_count: value.length,
-        country_code: countryCode,
-        is_valid: validatePhone(value)
-      });
+    // Formatação brasileira
+    if (phoneClean.length === 8) {
+      // Telefone fixo sem DDD: 3333-4444
+      return phoneClean.replace(/(\d{4})(\d{4})/, '$1-$2');
+    } else if (phoneClean.length === 9) {
+      // Celular sem DDD: 98235-4127
+      return phoneClean.replace(/(\d{5})(\d{4})/, '$1-$2');
+    } else if (phoneClean.length === 10) {
+      // Telefone fixo com DDD: (31) 3333-4444
+      return phoneClean.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    } else if (phoneClean.length === 11) {
+      // Celular com DDD: (31) 98235-4127
+      return phoneClean.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    } else if (phoneClean.length > 0) {
+      // Formatação progressiva
+      if (phoneClean.length <= 4) {
+        return phoneClean;
+      } else if (phoneClean.length <= 8) {
+        return phoneClean.replace(/(\d{4})(\d{0,4})/, '$1-$2').replace(/-$/, '');
+      } else if (phoneClean.length <= 10) {
+        return phoneClean.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+      } else {
+        return phoneClean.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+      }
     }
-  };
-
-  const selectCountry = (country: Country) => {
-    setCountryCode(country.code);
-    setShowCountryDropdown(false);
     
-    // Rastreia seleção de país
-    sendGAEvent('country_selected', {
-      country_code: country.code,
-      country_name: country.name
+    return value;
+  }, []);
+
+  const isPhoneValid = useMemo(() => {
+    if (!phone.trim()) return false;
+    
+    const phoneClean = phone.replace(/[\s\(\)\-]/g, '');
+    
+    // Validação brasileira rigorosa
+    if (phoneClean.length < 8 || phoneClean.length > 11) return false;
+    if (!/^\d+$/.test(phoneClean)) return false;
+    
+    if (phoneClean.length === 8) {
+      // Telefone fixo sem DDD: deve começar com 2, 3, 4 ou 5
+      if (!/^[2-5]/.test(phoneClean)) return false;
+    } else if (phoneClean.length === 9) {
+      // Celular sem DDD: deve começar com 9
+      if (!phoneClean.startsWith('9')) return false;
+    } else if (phoneClean.length === 10) {
+      // Telefone fixo com DDD
+      const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+      const ddd = phoneClean.substring(0, 2);
+      const numero = phoneClean.substring(2);
+      if (!validDDDs.includes(ddd)) return false;
+      if (!/^[2-5]/.test(numero)) return false;
+    } else if (phoneClean.length === 11) {
+      // Celular com DDD
+      const validDDDs = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '24', '27', '28', '31', '32', '33', '34', '35', '37', '38', '41', '42', '43', '44', '45', '46', '47', '48', '49', '51', '53', '54', '55', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '73', '74', '75', '77', '79', '81', '82', '83', '84', '85', '86', '87', '88', '89', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
+      const ddd = phoneClean.substring(0, 2);
+      const nono = phoneClean[2];
+      if (!validDDDs.includes(ddd)) return false;
+      if (nono !== '9') return false;
+    }
+    
+    // Verifica se não são todos os mesmos dígitos
+    if (/^(\d)\1+$/.test(phoneClean)) return false;
+    
+    return true;
+  }, [phone]);
+
+  const displayPhone = useMemo(() => {
+    return formatPhoneDisplay(phone);
+  }, [phone, formatPhoneDisplay]);
+
+  const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^\d\s\-\(\)]/g, '');
+    
+    // Remove formatação para armazenar apenas números
+    const cleanValue = value.replace(/[\s\(\)\-]/g, '');
+    setPhone(cleanValue);
+    setShowError(false); // Remove erro enquanto está digitando
+    
+    // Valida em tempo real após 8 dígitos
+    if (cleanValue.length >= 8) {
+      validatePhone(cleanValue);
+    } else if (cleanValue.length === 0) {
+      setPhoneError('Telefone é obrigatório para continuar');
+    }
+    
+    // Rastreia evento de preenchimento do telefone apenas se válido
+    if (cleanValue.length >= 8 && validatePhone(cleanValue)) {
+      // Debounce para evitar spam de eventos
+      clearTimeout(window.phoneInputTimeout);
+      window.phoneInputTimeout = setTimeout(() => {
+        sendGAEvent('field_filled_phone', {
+          field_name: 'phone',
+          character_count: cleanValue.length,
+          country_code: countryCode,
+          is_valid: true
+        });
+      }, 1000); // Envia evento apenas 1 segundo após parar de digitar
+    }
+  }, [setPhone, validatePhone, countryCode]);
+
+  const handlePhoneFocus = useCallback(() => {
+    setInputFocused(true);
+    sendGAEvent('field_focused_phone', {
+      field_name: 'phone'
     });
-  };
+  }, [setInputFocused]);
+
+  const handlePhoneBlur = useCallback(() => {
+    setInputFocused(false);
+    setShowError(true); // Mostra erro quando sai do campo
+    validatePhone(phone);
+  }, [setInputFocused, validatePhone, phone]);
 
   return (
     <div>
@@ -1835,75 +2027,37 @@ function WhatsAppContent({ elementsVisible, name, phone, setPhone, countryCode, 
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>2.</span>Prazer, {name || 'Pedro'}! Qual é o seu número de WhatsApp?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Vamos precisar entrar em contato com você
-              <span className="validation-tooltip">
-                ℹ️
-                <div className="tooltip-content">
-                  10-11 dígitos (ex: 11999887766)
-                </div>
-              </span>
+              Digite um número válido para contato (obrigatório)
             </div>
           </div>
         </div>
       </div>
       
       <div className="spacer-wrapper-description-main">
-        <div className={`phone-input-container ${inputFocused ? 'input-focused' : ''} ${elementsVisible ? 'input-fade-in' : 'input-hidden'} ${phoneError ? 'input-error' : phone && !phoneError ? 'input-success' : ''}`} style={{ animationDelay: '0.7s' }}>
-          <div className="phone-input-wrapper">
-            <div className="country-selector-wrapper">
-              <button
-                type="button"
-                onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                className="country-selector"
-              >
-                <span className="country-flag">🇧🇷</span>
-                <span className="country-code">{countryCode}</span>
-                <svg className="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              
-              {showCountryDropdown && (
-                <div className="country-dropdown">
-                  {countries.map((country: Country) => (
-                    <button
-                      key={country.code}
-                      type="button"
-                      onClick={() => selectCountry(country)}
-                      className="country-option"
-                    >
-                      <span className="country-flag">{country.flag}</span>
-                      <span className="country-name">{country.name}</span>
-                      <span className="country-code-option">{country.code}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <input
-              type="tel"
-              value={phone}
-              onChange={handlePhoneChange}
-              onKeyDown={handleKeyPress}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              placeholder="11999887766"
-              className="phone-input input-enhanced"
-              autoFocus
-              maxLength={15}
-            />
-          </div>
+        <div className={`phone-input-container ${inputFocused ? 'input-focused' : ''} ${elementsVisible ? 'input-fade-in' : 'input-hidden'} ${phoneError && showError ? 'input-error' : isPhoneValid ? 'input-success' : ''}`} style={{ animationDelay: '0.7s' }}>
+          <input
+            type="tel"
+            value={displayPhone}
+            onChange={handlePhoneChange}
+            onKeyDown={handleKeyPress}
+            onFocus={handlePhoneFocus}
+            onBlur={handlePhoneBlur}
+            placeholder="(11) 99999-9999"
+            className="phone-input input-enhanced"
+            autoFocus
+            maxLength={15}
+            required
+          />
           <div className="input-underline input-underline-enhanced"></div>
         </div>
         
-        {phoneError && (
+        {phoneError && showError && (
           <div className="error-message" style={{ marginTop: '12px' }}>
             <span className="error-icon">⚠️</span>
             {phoneError}
           </div>
         )}
-        {phone && !phoneError && (
+        {isPhoneValid && (
           <div className="success-message" style={{ marginTop: '12px' }}>
             <span className="success-icon">✅</span>
             Telefone válido!
@@ -1923,26 +2077,105 @@ function EmailContent({ elementsVisible, email, setEmail, inputFocused, setInput
   handleKeyPress: (e: React.KeyboardEvent) => void;
 }) {
   const [emailError, setEmailError] = useState('');
+  const [showError, setShowError] = useState(false);
 
-  const validateEmail = (value: string) => {
+  const validateEmail = useCallback((value: string) => {
     if (!value.trim()) {
-      setEmailError('Email é obrigatório');
+      setEmailError('Email é obrigatório para continuar');
       return false;
     }
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value.trim())) {
-      setEmailError('Email inválido (exemplo: usuario@dominio.com)');
+      setEmailError('Digite um email válido (ex: usuario@dominio.com)');
       return false;
     }
+    
+    // Validações adicionais
+    const emailLower = value.trim().toLowerCase();
+    
+    // Verifica se tem pelo menos 3 caracteres antes do @
+    const beforeAt = emailLower.split('@')[0];
+    if (beforeAt.length < 3) {
+      setEmailError('Email deve ter pelo menos 3 caracteres antes do @');
+      return false;
+    }
+    
+    // Verifica se o domínio tem pelo menos 2 caracteres
+    const domain = emailLower.split('@')[1];
+    if (domain && domain.split('.')[0].length < 2) {
+      setEmailError('Domínio do email deve ter pelo menos 2 caracteres');
+      return false;
+    }
+    
+    // Verifica se a extensão tem pelo menos 2 caracteres
+    const extension = domain ? domain.split('.').pop() : '';
+    if (!extension || extension.length < 2) {
+      setEmailError('Extensão do email deve ter pelo menos 2 caracteres (ex: .com, .br)');
+      return false;
+    }
+    
     setEmailError('');
     return true;
-  };
+  }, []);
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const isEmailValid = useMemo(() => {
+    if (!email.trim()) return false;
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) return false;
+    
+    const emailLower = email.trim().toLowerCase();
+    const beforeAt = emailLower.split('@')[0];
+    if (beforeAt.length < 3) return false;
+    
+    const domain = emailLower.split('@')[1];
+    if (domain && domain.split('.')[0].length < 2) return false;
+    
+    const extension = domain ? domain.split('.').pop() : '';
+    if (!extension || extension.length < 2) return false;
+    
+    return true;
+  }, [email]);
+
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
+    setShowError(false); // Remove erro enquanto está digitando
+    
+    // Valida em tempo real após 5 caracteres
+    if (value.length >= 5) {
     validateEmail(value);
-  };
+    } else if (value.length === 0) {
+      setEmailError('Email é obrigatório para continuar');
+    }
+    
+    // Rastreia evento de preenchimento do email
+    if (value.length >= 5 && validateEmail(value)) {
+      // Debounce para evitar spam de eventos
+      clearTimeout(window.emailInputTimeout);
+      window.emailInputTimeout = setTimeout(() => {
+        sendGAEvent('field_filled_email', {
+          field_name: 'email',
+          character_count: value.length,
+          is_valid: true
+        });
+      }, 1000); // Envia evento apenas 1 segundo após parar de digitar
+    }
+  }, [setEmail, validateEmail]);
+
+  const handleEmailFocus = useCallback(() => {
+    setInputFocused(true);
+    sendGAEvent('field_focused_email', {
+      field_name: 'email'
+    });
+  }, [setInputFocused]);
+
+  const handleEmailBlur = useCallback(() => {
+    setInputFocused(false);
+    setShowError(true); // Mostra erro quando sai do campo
+    validateEmail(email);
+  }, [setInputFocused, validateEmail, email]);
 
   return (
     <div>
@@ -1953,13 +2186,7 @@ function EmailContent({ elementsVisible, email, setEmail, inputFocused, setInput
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>3.</span>Agora insira seu e-mail*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Digite seu melhor e-mail para contato
-              <span className="validation-tooltip">
-                ℹ️
-                <div className="tooltip-content">
-                  Formato: usuario@dominio.com
-                </div>
-              </span>
+              Digite seu melhor e-mail para contato (obrigatório)
             </div>
           </div>
         </div>
@@ -1971,20 +2198,22 @@ function EmailContent({ elementsVisible, email, setEmail, inputFocused, setInput
             type="email"
             value={email}
             onChange={handleEmailChange}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
+            onFocus={handleEmailFocus}
+            onBlur={handleEmailBlur}
             onKeyDown={handleKeyPress}
-            placeholder="seu@email.com"
-            className={`form-input-main ${emailError ? 'input-error' : email && !emailError ? 'input-success' : ''}`}
+            placeholder="Digite seu email (ex: seu@email.com)"
+            className={`form-input-main ${emailError && showError ? 'input-error' : isEmailValid ? 'input-success' : ''}`}
             autoFocus
+            maxLength={100}
+            required
           />
-          {emailError && (
+          {emailError && showError && (
             <div className="error-message">
               <span className="error-icon">⚠️</span>
               {emailError}
             </div>
           )}
-          {email && !emailError && (
+          {isEmailValid && (
             <div className="success-message">
               <span className="success-icon">✅</span>
               Email válido!
@@ -2068,7 +2297,7 @@ function MomentoContent({ elementsVisible, optionsVisible, selectedMoment, setSe
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>5.</span>Qual o seu momento atual?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Selecione a opção que melhor descreve sua situação
+              Selecione a opção que melhor descreve sua situação (obrigatório)
             </div>
           </div>
         </div>
@@ -2095,6 +2324,15 @@ function MomentoContent({ elementsVisible, optionsVisible, selectedMoment, setSe
             </button>
           ))}
         </div>
+        
+        {/* Mostra mensagem se nenhuma opção for selecionada */}
+        {!selectedMoment && optionsVisible && (
+          <div className="validation-message" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <span style={{ color: '#ff6b6b', fontSize: '14px' }}>
+              ⚠️ Selecione uma opção para continuar
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2129,7 +2367,7 @@ function VendeuForaContent({ elementsVisible, optionsVisible, vendeuFora, setVen
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>6.</span>Você já vendeu para fora do Brasil?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Selecione sua experiência com vendas internacionais
+              Selecione sua experiência com vendas internacionais (obrigatório)
             </div>
           </div>
         </div>
@@ -2156,6 +2394,15 @@ function VendeuForaContent({ elementsVisible, optionsVisible, vendeuFora, setVen
             </button>
           ))}
         </div>
+        
+        {/* Mostra mensagem se nenhuma opção for selecionada */}
+        {!vendeuFora && optionsVisible && (
+          <div className="validation-message" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <span style={{ color: '#ff6b6b', fontSize: '14px' }}>
+              ⚠️ Selecione uma opção para continuar
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2169,6 +2416,52 @@ function FaturamentoContent({ elementsVisible, faturamento, setFaturamento, inpu
   setInputFocused: (focused: boolean) => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
 }) {
+  // Função para formatar o valor como moeda brasileira
+  const formatCurrency = (value: string) => {
+    // Remove tudo que não for número
+    const numericValue = value.replace(/\D/g, '');
+    
+    if (!numericValue) return '';
+    
+    // Converte para número e formata
+    const number = parseInt(numericValue) / 100;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2
+    }).format(number);
+  };
+
+  // Função para obter apenas o valor numérico sem formatação
+  const getNumericValue = (formattedValue: string) => {
+    return formattedValue.replace(/\D/g, '');
+  };
+
+  const handleFaturamentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    // Se o usuário está digitando "0" ou deletando tudo, permite
+    if (inputValue === '' || inputValue === '0') {
+      setFaturamento('');
+      return;
+    }
+    
+    // Se o usuário digita apenas números, formata como moeda
+    if (/^\d+$/.test(inputValue.replace(/\D/g, ''))) {
+      const formatted = formatCurrency(inputValue);
+      setFaturamento(formatted);
+    } else {
+      // Se já está formatado ou contém texto, extrai números e reformata
+      const numericOnly = inputValue.replace(/\D/g, '');
+      if (numericOnly) {
+        const formatted = formatCurrency(numericOnly);
+        setFaturamento(formatted);
+      } else {
+        setFaturamento('');
+      }
+    }
+  };
+
   return (
     <div>
       <div data-qa="question-header" className="header-wrapper-main">
@@ -2178,7 +2471,7 @@ function FaturamentoContent({ elementsVisible, faturamento, setFaturamento, inpu
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>7.</span>Quanto você já faturou acumulado no mercado digital até agora?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Digite o valor total que você já faturou (ex: R$ 50.000, R$ 120.000, etc.)
+              Digite o valor total que você já faturou (ex: R$ 50.000,00, R$ 120.000,00, etc.)
             </div>
           </div>
         </div>
@@ -2189,16 +2482,19 @@ function FaturamentoContent({ elementsVisible, faturamento, setFaturamento, inpu
           <input
             type="text"
             value={faturamento}
-            onChange={(e) => setFaturamento(e.target.value)}
+            onChange={handleFaturamentoChange}
             onKeyDown={handleKeyPress}
             onFocus={() => setInputFocused(true)}
             onBlur={() => setInputFocused(false)}
-            placeholder="R$ 0 (se ainda não faturou) ou R$ 50.000..."
+            placeholder="R$ 0,00 (se ainda não faturou) ou R$ 50.000,00..."
             className="name-input input-enhanced"
             autoFocus
-            maxLength={100}
+            maxLength={20}
           />
           <div className="input-underline input-underline-enhanced"></div>
+        </div>
+        <div className={`text-sm text-gray-500 mt-2 ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.9s' }}>
+          💡 Dica: Digite apenas números (ex: 50000) e será formatado automaticamente
         </div>
       </div>
     </div>
@@ -2221,7 +2517,7 @@ function CaixaDisponivelContent({ elementsVisible, optionsVisible, caixaDisponiv
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>8.</span>Hoje, quanto você tem de caixa disponível para investir na escala de um negócio já validado e lucrativo no mercado global?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Selecione a faixa de investimento que você tem disponível
+              Selecione a faixa de investimento que você tem disponível (obrigatório)
             </div>
           </div>
         </div>
@@ -2248,6 +2544,15 @@ function CaixaDisponivelContent({ elementsVisible, optionsVisible, caixaDisponiv
             </button>
           ))}
         </div>
+        
+        {/* Mostra mensagem se nenhuma opção for selecionada */}
+        {!caixaDisponivel && optionsVisible && (
+          <div className="validation-message" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <span style={{ color: '#ff6b6b', fontSize: '14px' }}>
+              ⚠️ Selecione uma opção para continuar
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2269,7 +2574,7 @@ function ProblemaPrincipalContent({ elementsVisible, optionsVisible, problemaPri
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>9.</span>Hoje, qual é o principal problema ou dificuldade que você enfrenta em seu negócio digital atual?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              E que te motiva a buscar faturamento em moedas como (Dólar, Euro ou Libra)?
+              E que te motiva a buscar faturamento em moedas como (Dólar, Euro ou Libra)? (obrigatório)
             </div>
           </div>
         </div>
@@ -2296,6 +2601,15 @@ function ProblemaPrincipalContent({ elementsVisible, optionsVisible, problemaPri
             </button>
           ))}
         </div>
+        
+        {/* Mostra mensagem se nenhuma opção for selecionada */}
+        {!problemaPrincipal && optionsVisible && (
+          <div className="validation-message" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <span style={{ color: '#ff6b6b', fontSize: '14px' }}>
+              ⚠️ Selecione uma opção para continuar
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2317,7 +2631,7 @@ function AreaAjudaContent({ elementsVisible, optionsVisible, areaAjuda, setAreaA
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>10.</span>Em qual dessas áreas você sente que precisa de ajuda especializada hoje?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Selecione a área onde você mais precisa de suporte
+              Selecione a área onde você mais precisa de suporte (obrigatório)
             </div>
           </div>
         </div>
@@ -2344,6 +2658,15 @@ function AreaAjudaContent({ elementsVisible, optionsVisible, areaAjuda, setAreaA
             </button>
           ))}
         </div>
+        
+        {/* Mostra mensagem se nenhuma opção for selecionada */}
+        {!areaAjuda && optionsVisible && (
+          <div className="validation-message" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <span style={{ color: '#ff6b6b', fontSize: '14px' }}>
+              ⚠️ Selecione uma opção para continuar
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2365,7 +2688,7 @@ function SocioContent({ elementsVisible, optionsVisible, possuiSocio, setPossuiS
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>11.</span>Você possui algum sócio ou parceiro que participa diretamente das decisões estratégicas?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Queremos entender a estrutura do seu negócio
+              Queremos entender a estrutura do seu negócio (obrigatório)
             </div>
           </div>
         </div>
@@ -2392,6 +2715,15 @@ function SocioContent({ elementsVisible, optionsVisible, possuiSocio, setPossuiS
             </button>
           ))}
         </div>
+        
+        {/* Mostra mensagem se nenhuma opção for selecionada */}
+        {!possuiSocio && optionsVisible && (
+          <div className="validation-message" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <span style={{ color: '#ff6b6b', fontSize: '14px' }}>
+              ⚠️ Selecione uma opção para continuar
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2414,7 +2746,7 @@ function PorQueEscolherContent({ elementsVisible, porQueEscolher, setPorQueEscol
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>12.</span>Apenas 10 pessoas serão selecionadas para participar desta consultoria estratégica. Por que deveríamos escolher você?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Conte-nos sobre seu comprometimento e motivação (mínimo 50 caracteres)
+              Conte-nos sobre seu comprometimento e motivação (mínimo 10 caracteres - obrigatório)
             </div>
           </div>
         </div>
@@ -2429,14 +2761,28 @@ function PorQueEscolherContent({ elementsVisible, porQueEscolher, setPorQueEscol
             onBlur={() => setInputFocused(false)}
             onKeyDown={handleKeyPress}
             placeholder="Escreva sobre seu comprometimento, experiência e por que você deveria ser selecionado(a) para esta consultoria estratégica..."
-            className="form-textarea-main"
+            className={`form-textarea-main ${porQueEscolher.trim().length > 0 && porQueEscolher.trim().length < 10 ? 'input-error' : porQueEscolher.trim().length >= 10 ? 'input-success' : ''}`}
             rows={6}
             maxLength={1000}
             autoFocus
           />
           <div className="character-count">
-            {porQueEscolher.length}/1000 caracteres {porQueEscolher.length < 50 && `(mínimo 50)`}
+            {porQueEscolher.length}/1000 caracteres {porQueEscolher.length < 10 && `(mínimo 10)`}
           </div>
+          
+          {/* Mensagem de validação */}
+          {porQueEscolher.trim().length > 0 && porQueEscolher.trim().length < 10 && (
+            <div className="error-message" style={{ marginTop: '8px' }}>
+              <span className="error-icon">⚠️</span>
+              Escreva pelo menos 10 caracteres para continuar
+            </div>
+          )}
+          {porQueEscolher.trim().length >= 10 && (
+            <div className="success-message" style={{ marginTop: '8px' }}>
+              <span className="success-icon">✅</span>
+              Resposta válida!
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2459,7 +2805,7 @@ function CompromissoContent({ elementsVisible, optionsVisible, compromisso, setC
               <span className={`question-number ${elementsVisible ? 'number-bounce' : ''}`} style={{ animationDelay: '0.1s' }}>13.</span>Caso você seja selecionado(a), você se compromete a comparecer no dia e horário agendado?*
             </h1>
             <div className={`title-secondary-text quiz-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              Esta consultoria requer seu comprometimento total
+              Esta consultoria requer seu comprometimento total (obrigatório)
             </div>
           </div>
         </div>
@@ -2486,6 +2832,15 @@ function CompromissoContent({ elementsVisible, optionsVisible, compromisso, setC
             </button>
           ))}
         </div>
+        
+        {/* Mostra mensagem se nenhuma opção for selecionada */}
+        {!compromisso && optionsVisible && (
+          <div className="validation-message" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <span style={{ color: '#ff6b6b', fontSize: '14px' }}>
+              ⚠️ Selecione uma opção para continuar
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2500,60 +2855,140 @@ function FinishedContent({
   submitStatus?: 'idle' | 'success' | 'error' | 'partial';
   isSubmitting?: boolean;
 }) {
-  const getStatusMessage = () => {
-    if (isSubmitting) {
-      return {
-        title: "Enviando... ⏳",
-        subtitle: "Aguarde, estamos salvando suas respostas..."
-      };
+  const [analysisStage, setAnalysisStage] = useState<'initial' | 'analyzing' | 'complete'>('initial');
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisText, setAnalysisText] = useState('Iniciando análise...');
+
+  const startAnalysisSequence = useCallback(() => {
+    const analysisSteps = [
+      { text: 'Analisando suas respostas...', progress: 5, duration: 1200 },
+      { text: 'Processando dados demográficos...', progress: 12, duration: 1400 },
+      { text: 'Avaliando perfil empreendedor...', progress: 25, duration: 1600 },
+      { text: 'Calculando potencial de crescimento...', progress: 38, duration: 1300 },
+      { text: 'Verificando compatibilidade com consultoria...', progress: 52, duration: 1500 },
+      { text: 'Analisando experiência no mercado digital...', progress: 65, duration: 1200 },
+      { text: 'Processando dados financeiros...', progress: 75, duration: 1400 },
+      { text: 'Identificando oportunidades de crescimento...', progress: 85, duration: 1100 },
+      { text: 'Preparando recomendações personalizadas...', progress: 92, duration: 1300 },
+      { text: 'Gerando relatório de compatibilidade...', progress: 97, duration: 1000 },
+      { text: 'Análise concluída! Redirecionando...', progress: 100, duration: 1500 }
+    ];
+
+    let currentStep = 0;
+    
+    const runStep = () => {
+      if (currentStep < analysisSteps.length) {
+        const step = analysisSteps[currentStep];
+        setAnalysisText(step.text);
+        setAnalysisProgress(step.progress);
+        
+        currentStep++;
+        
+        // Se for o último step, redireciona após mostrar 100%
+        if (currentStep === analysisSteps.length) {
+          setTimeout(() => {
+            // Rastrear evento de redirecionamento
+            sendGAEvent('calendly_redirect', {
+              analysis_completed: true,
+              redirect_url: 'https://calendly.com/maximizedigitall/30min?redirect_url=' + encodeURIComponent(window.location.origin + '/thank-you')
+            });
+            
+            console.log('🚀 Redirecionando para Calendly automaticamente...');
+            
+            // Redirecionar diretamente para Calendly (não é bloqueado pelo navegador)
+            const calendlyUrl = 'https://calendly.com/maximizedigitall/30min?redirect_url=' + encodeURIComponent(window.location.origin + '/thank-you');
+            console.log('✅ Redirecionando para:', calendlyUrl);
+            
+            // Redirecionamento direto na mesma aba
+            window.location.href = calendlyUrl;
+          }, step.duration);
+        } else {
+          setTimeout(runStep, step.duration);
+        }
+      }
+    };
+
+    runStep();
+  }, []);
+
+  useEffect(() => {
+    if (!isSubmitting && (submitStatus === 'success' || submitStatus === 'partial')) {
+      // Inicia a análise após o envio bem-sucedido
+      console.log('📊 Iniciando sequência de análise da IA...');
+      const timer = setTimeout(() => {
+        setAnalysisStage('analyzing');
+        startAnalysisSequence();
+      }, 2000);
+
+      return () => clearTimeout(timer);
     }
+  }, [isSubmitting, submitStatus, startAnalysisSequence]);
 
-    switch (submitStatus) {
-      case 'success':
-        return {
-          title: "Obrigado! 🎉",
-          subtitle: "Suas respostas foram enviadas com sucesso para nossa planilha. Entraremos em contato em breve!"
-        };
-      case 'partial':
-        return {
-          title: "Quase lá! 📱",
-          subtitle: "Suas respostas foram salvas localmente. Tentaremos enviar novamente em breve!"
-        };
-      case 'error':
-        return {
-          title: "Ops! 😅",
-          subtitle: "Houve um problema, mas suas respostas estão salvas. Nossa equipe foi notificada!"
-        };
-      default:
-        return {
-          title: "Obrigado! 🎉",
-          subtitle: "Suas respostas foram enviadas com sucesso. Entraremos em contato em breve!"
-        };
-    }
-  };
+  if (analysisStage === 'analyzing') {
+  return (
+    <div>
+      <div data-qa="question-header" className="header-wrapper-main">
+        <div className="text-wrapper-main">
+          <div className="title-container">
+              {/* Logo similar ao carregamento */}
+              <div className={`analysis-logo-container ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.1s' }}>
+                <div className="analysis-logo">
+                  <Image src="/lgSemFundo.png" alt="Logo" width={120} height={120} priority />
+                </div>
+              </div>
 
-  const { title, subtitle } = getStatusMessage();
+              <h1 className={`title-main-text analysis-title ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
+                 Nossa IA está analisando seu perfil
+            </h1>
+              
+              <div className={`title-secondary-text analysis-subtitle ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
+                {analysisText}
+            </div>
+            
+              {/* Barra de progresso da análise */}
+              <div className={`analysis-progress-container ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.7s' }}>
+                <div className="analysis-progress-bar">
+                  <div 
+                    className="analysis-progress-fill"
+                    style={{ width: `${analysisProgress}%` }}
+                  ></div>
+                </div>
+                <div className="analysis-progress-text">
+                  {analysisProgress}% concluído
+                </div>
+              </div>
 
+              {/* Indicadores de IA trabalhando */}
+              <div className={`ai-indicators ${elementsVisible ? 'element-fade-in' : 'element-hidden'}`} style={{ animationDelay: '0.9s' }}>
+                <div className="ai-dot ai-dot-1"></div>
+                <div className="ai-dot ai-dot-2"></div>
+                <div className="ai-dot ai-dot-3"></div>
+                </div>
+
+              {/* Mensagem adicional de carregamento */}
+              <div className={`analysis-loading-message ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '1.1s' }}>
+                <p>🧠 Analisando as variáveis do seu perfil...</p>
+                <p>⏱️ Isso pode levar alguns segundos para ser preciso</p>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  }
+
+  // Estado inicial - ainda não iniciou a análise
   return (
     <div>
       <div data-qa="question-header" className="header-wrapper-main">
         <div className="text-wrapper-main">
           <div className="title-container">
             <h1 className={`title-main-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.3s' }}>
-              {title}
+              Obrigado! 🎉
             </h1>
             <div className={`title-secondary-text ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.5s' }}>
-              {subtitle}
+              Suas respostas foram enviadas com sucesso. Preparando análise...
             </div>
-            
-            
-            {submitStatus === 'partial' && (
-              <div className={`text-center mt-6 ${elementsVisible ? 'text-fade-in' : 'text-hidden'}`} style={{ animationDelay: '0.7s' }}>
-                <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm">
-                  📱 Dados salvos localmente
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

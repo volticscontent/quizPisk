@@ -365,13 +365,44 @@ body {
   transform-style: preserve-3d;
 }
 
-/* Phone Input Específico */
+/* Phone Input Específico - Simplificado */
 .phone-input-container {
   position: relative;
   margin: 32px 0;
-  transition: all 0.3s var(--easing-smooth);
+  transition: all 0.4s var(--easing-expo);
+  transform-style: preserve-3d;
 }
 
+.phone-input {
+  margin-left: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 32px;
+  font-weight: 400;
+  color: white;
+  font-family: var(--font-maven-pro), sans-serif;
+  padding: 16px 0;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  transition: all 0.4s var(--easing-expo);
+  transform-style: preserve-3d;
+}
+
+.phone-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 300;
+  transition: all 0.4s var(--easing-expo);
+}
+
+.phone-input:focus::placeholder {
+  color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+  opacity: 0.8;
+}
+
+/* Phone Input Específico */
 .phone-input-wrapper {
   display: flex;
   align-items: center;
@@ -2371,7 +2402,7 @@ body {
   border: none;
   border-bottom: 3px solid rgba(255, 255, 255, 0.15);
   color: white;
-  font-size: 36px;
+  font-size: 22px;
   font-weight: 400;
   padding: 16px 0;
   width: 100%;
@@ -2389,5 +2420,155 @@ body {
 .form-input-main::placeholder {
   color: rgba(255, 255, 255, 0.5);
   font-weight: 300;
+}
+
+/* Display fixo do código do país brasileiro */
+.country-code-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: white;
+  font-family: var(--font-maven-pro), sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  min-width: 120px;
+  user-select: none;
+}
+
+/* Estilos para a análise da IA */
+.analysis-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 32px auto;
+  width: 100%;
+}
+
+.analysis-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: logo-pulse 2s ease-in-out infinite;
+}
+
+.analysis-title {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.analysis-subtitle {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.analysis-progress-container {
+  margin: 32px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 300px;
+}
+
+.analysis-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.analysis-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange) 0%, var(--orange-hover) 100%);
+  border-radius: 4px;
+  transition: width 0.8s var(--easing-expo);
+  box-shadow: 0 0 15px rgba(45, 211, 59, 0.4);
+}
+
+.analysis-progress-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-maven-pro), sans-serif;
+}
+
+.ai-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0;
+}
+
+.ai-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--orange);
+  animation: ai-pulse 1.5s ease-in-out infinite;
+}
+
+.ai-dot-1 {
+  animation-delay: 0s;
+}
+
+.ai-dot-2 {
+  animation-delay: 0.3s;
+}
+
+.ai-dot-3 {
+  animation-delay: 0.6s;
+}
+
+.analysis-loading-message {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.5;
+  margin-top: 24px;
+}
+
+.analysis-loading-message p {
+  margin: 8px 0;
+}
+
+@keyframes ai-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(45, 211, 59, 0.4);
+  }
+}
+
+/* Responsive para análise em mobile */
+@media (max-width: 768px) {
+  .analysis-progress-container {
+    margin: 24px auto;
+    max-width: 280px;
+  }
+  
+  .analysis-loading-message {
+    font-size: 14px;
+    margin-top: 20px;
+  }
+  
+  .ai-indicators {
+    margin: 20px 0;
+  }
+  
+  .ai-dot {
+    width: 10px;
+    height: 10px;
+  }
 }
 

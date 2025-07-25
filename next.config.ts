@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
+  // Configuração para resolver problemas de redirecionamento
+  trailingSlash: false,
+  output: 'standalone',
+  
   // Otimizações de imagem
   images: {
     formats: ['image/webp', 'image/avif'],
@@ -16,7 +20,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['react', 'react-dom'],
   },
 
-  // Headers para melhor cache
+  // Headers para melhor cache e segurança
   async headers() {
     return [
       {
@@ -34,9 +38,23 @@ const nextConfig: NextConfig = {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
           },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains',
+          },
         ],
       },
     ];
+  },
+
+  // Configuração para evitar redirects desnecessários
+  async redirects() {
+    return [];
+  },
+
+  // Configuração para rewrite se necessário
+  async rewrites() {
+    return [];
   },
 };
 
