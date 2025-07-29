@@ -12,7 +12,7 @@ import type { FormData } from './types/quiz';
 import { sendMetaEvent, sendPageView, sendQuestionEvent, getStepNumber } from './utils/tracking';
 import { N8N_WEBHOOK_URL, POSTGRES_WEBHOOK_URL, COUNTRIES, CALENDLY_URL } from './utils/constants';
 import { validateCurrentStep } from './utils/validation';
-import { getResponseText, saveToLocalStorage, loadFromLocalStorage, savePartialDataToLocalStorage, loadPartialDataFromLocalStorage } from './utils/dataHandlers';
+import { getResponseText, saveToLocalStorage, loadFromLocalStorage, savePartialDataToLocalStorage, loadPartialDataFromLocalStorage, formatCurrency } from './utils/dataHandlers';
 
 // Componentes
 import { NameContent } from './components/NameContent';
@@ -72,7 +72,7 @@ export default function Home() {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'partial'>('idle');
-  const [analysisCompleted, setAnalysisCompleted] = useState(false);
+  // Removido analysisCompleted que não era usado
   
   // ID da sessão para tracking de leads parciais
   const [sessionId] = useState(() => {
@@ -81,33 +81,17 @@ export default function Home() {
     return `session_${timestamp}_${random}`;
   });
 
-  // Estados de validação com códigos HTTP-like
-  const [validationState, setValidationState] = useState<ValidationState>({
-    name: { status: 400, message: 'Nome completo é obrigatório', required: true },
-    whatsapp: { status: 400, message: 'Telefone válido é obrigatório', required: true },
-    email: { status: 400, message: 'Email válido é obrigatório', required: true },
-    instagram: { status: 400, message: 'Instagram é obrigatório', required: true },
-    momento: { status: 422, message: 'Selecione uma opção', required: true },
-    vendeu_fora: { status: 422, message: 'Selecione uma opção', required: true },
-    faturamento: { status: 400, message: 'Faturamento é obrigatório', required: true },
-    caixa_disponivel: { status: 422, message: 'Selecione uma opção', required: true },
-    problema_principal: { status: 422, message: 'Selecione uma opção', required: true },
-    area_ajuda: { status: 422, message: 'Selecione uma opção', required: true },
-    socio: { status: 422, message: 'Selecione uma opção', required: true },
-    por_que_escolher: { status: 400, message: 'Mínimo 10 caracteres', required: true },
-    compromisso: { status: 422, message: 'Selecione uma opção', required: true },
-    analysis: { status: 200, required: false },
-    finished: { status: 200, required: false }
-  });
+  // Removido validationState que não era usado
 
   // Hook para rastreamento UTM e Meta Pixel
-  const { trackLead } = useUtmTracking();
+  // Removido trackLead que não era usado
+  const { } = useUtmTracking();
   
   // Hook para Microsoft Clarity Analytics
   const { trackQuizStep, trackQuizAbandonment, trackQuizCompletion, trackCalendlyClick, setUserSession, setCustomTag, upgradeSession } = useClarityTracking();
   
   // Hook para Server-Sent Events (atualizações em tempo real)
-  const { isConnected: isSSEConnected, sendQuizProgress, addMessageHandler } = useSSE({
+  const { isConnected: isSSEConnected, sendQuizProgress } = useSSE({
     sessionId,
     autoConnect: true,
     reconnectInterval: 3000,
@@ -194,7 +178,7 @@ export default function Home() {
     console.log('🔗 URL n8n utilizada:', N8N_WEBHOOK_URL);
     
     // Verificar campos undefined
-    const undefinedFields = Object.entries(formData).filter(([key, value]) => value === undefined || value === null);
+    const undefinedFields = Object.entries(formData).filter(([, value]) => value === undefined || value === null);
     if (undefinedFields.length > 0) {
       console.warn('⚠️ Campos undefined encontrados:', undefinedFields);
     }
@@ -482,11 +466,11 @@ export default function Home() {
         }
       }, 100);
     }
-  }, []);
+  }, [initiateWelcomeAnimation]);
 
   // Rastreamento de abandono da página
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       if (currentStep !== 'finished') {
         console.log('Quiz abandoned at step:', currentStep);
         
@@ -497,7 +481,6 @@ export default function Home() {
         setCustomTag('abandonment_reason', 'page_exit');
         
         const message = 'Tem certeza que deseja sair? Suas respostas serão perdidas.';
-        e.returnValue = message;
         return message;
       }
     };
@@ -509,7 +492,7 @@ export default function Home() {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
-  }, [currentStep]);
+  }, [currentStep, quizStartTime, trackQuizAbandonment, setCustomTag]);
 
   // Controle de progresso baseado no step atual
   useEffect(() => {
@@ -535,7 +518,7 @@ export default function Home() {
       setCustomTag('session_type', 'quiz_session');
       setCustomTag('quiz_start_step', currentStep);
     }
-  }, [sessionId, hasHydrated.current]);
+  }, [sessionId, currentStep, setUserSession, setCustomTag]);
 
   // Tracking de progresso por step
   useEffect(() => {
@@ -560,14 +543,14 @@ export default function Home() {
       // N8N Bridge - Atualização removida daqui para evitar duplicação
       // A atualização é feita no handleContinue quando o usuário progride
     }
-  }, [currentStep, hasHydrated.current, isSSEConnected]);
+  }, [currentStep, isSSEConnected, trackQuizStep, setCustomTag, sendQuizProgress, quizStartTime]);
 
   // Efeito para Page View inicial do Meta Pixel
   useEffect(() => {
     if (hasHydrated.current && currentStep === 'name') {
       // trackQuizPageView(); // REMOVIDO
     }
-  }, [hasHydrated.current]);
+  }, [currentStep]);
 
   // Cleanup effect - limpa todos os timers ao desmontar
   useEffect(() => {
@@ -640,7 +623,7 @@ export default function Home() {
   // Função para quando a análise termina
   const handleAnalysisComplete = useCallback(() => {
     console.log('🤖 Análise da IA concluída, indo para step finished...');
-    setAnalysisCompleted(true);
+    // Removido analysisCompleted que não era usado
     
     // Transição direta para finished
     setCurrentStep('finished');
@@ -651,10 +634,105 @@ export default function Home() {
     }, 100);
     
     // Executa o finishQuiz para enviar os dados
-    setTimeout(() => {
-      finishQuiz();
+    setTimeout(async () => {
+      if (isSubmitting) {
+        console.log('⚠️ Envio já em andamento, aguarde...');
+        return;
+      }
+
+      console.log('🎯 Finalizando quiz...');
+      
+      // DEBUG: Verificar todos os estados antes do envio
+      console.log('🔍 Estados atuais antes do envio:', {
+        name,
+        phone,
+        email,
+        instagram,
+        selectedMoment,
+        vendeuFora,
+        faturamento,
+        caixaDisponivel,
+        problemaPrincipal,
+        areaAjuda,
+        possuiSocio,
+        porQueEscolher,
+        compromisso,
+        selectedCountry: selectedCountry?.name
+      });
+      
+      setIsSubmitting(true);
+      
+      try {
+        const formData = saveToLocalStorage({
+          name,
+          phone,
+          email,
+          instagram,
+          selectedMoment,
+          vendeuFora,
+          faturamento,
+          caixaDisponivel,
+          problemaPrincipal,
+          areaAjuda,
+          possuiSocio,
+          porQueEscolher,
+          compromisso,
+          selectedCountry
+        });
+        
+        if (formData) {
+          console.log('💾 Dados formatados para N8N:', formData);
+          console.log('💾 Dados salvos localmente, tentando enviar para N8N...');
+          
+          try {
+            // Usa o bridge seguro do N8N
+            const n8nResult = await sendToN8nWebhook(formData);
+
+            // Em desenvolvimento local, sempre considera sucesso
+            if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+              console.log('🚀 Desenvolvimento local: simulando sucesso total');
+              setSubmitStatus('success');
+              
+            } else if (n8nResult) {
+              console.log('🎉 Quiz finalizado e enviado com sucesso para N8N!');
+              setSubmitStatus('success');
+              
+              // Tracking Clarity - Quiz completado com sucesso
+              const totalTime = Math.round((Date.now() - quizStartTime) / 1000);
+              trackQuizCompletion(totalTime, true);
+              upgradeSession(); // Marca sessão como importante
+              setCustomTag('completion_status', 'success');
+              setCustomTag('leads_sent_count', '1');
+              
+              // Envia evento QuClick-calendly apenas quando há sucesso total
+              sendMetaEvent('QuClick-calendly', {
+                form_completed: true,
+                leads_sent: 1,
+                environment: 'production',
+                session_id: sessionId,
+                email: email,
+                phone: phone,
+              });
+            } else {
+              console.log('❌ Falha ao enviar para N8N, mas dados salvos localmente');
+              setSubmitStatus('partial');
+            }
+          } catch (error) {
+            console.error('❌ Erro ao enviar para N8N:', error);
+            setSubmitStatus('partial');
+          }
+        } else {
+          console.error('❌ Erro ao salvar dados localmente');
+          setSubmitStatus('error');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao finalizar quiz:', error);
+        setSubmitStatus('error');
+      } finally {
+        setIsSubmitting(false);
+      }
     }, 500);
-  }, [finishQuiz, initiateStepAnimation]);
+  }, [initiateStepAnimation, name, phone, email, instagram, selectedMoment, vendeuFora, faturamento, caixaDisponivel, problemaPrincipal, areaAjuda, possuiSocio, porQueEscolher, compromisso, selectedCountry, isSubmitting, saveToLocalStorage, sendToN8nWebhook, setSubmitStatus, quizStartTime, trackQuizCompletion, upgradeSession, setCustomTag, sendMetaEvent, sessionId]);
 
   const handleContinue = async () => {
     if (isTransitioning.current || isSubmitting) {

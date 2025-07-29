@@ -60,19 +60,18 @@ export async function GET(request: NextRequest) {
           clearInterval(heartbeat);
           connections.delete(sessionId);
         }
-      }, 30000); // A cada 30 segundos
+      }, 30000); // 30 segundos
       
-      // Cleanup quando conexão fecha
+      // Cleanup quando conexão é fechada
       const cleanup = () => {
         console.log('🧹 Limpando conexão SSE para sessionId:', sessionId);
         clearInterval(heartbeat);
         connections.delete(sessionId);
       };
       
-      // Detecta quando cliente desconecta
+      // Escuta evento de abort da requisição
       request.signal.addEventListener('abort', cleanup);
     },
-    
     cancel() {
       console.log('❌ Stream SSE cancelado para sessionId:', sessionId);
       connections.delete(sessionId);
@@ -89,35 +88,4 @@ export async function GET(request: NextRequest) {
       'Access-Control-Allow-Headers': 'Cache-Control',
     },
   });
-}
-
-// Função para broadcast de mensagens (pode ser chamada de outras APIs)
-export function broadcastToSession(sessionId: string, data: Record<string, unknown>) {
-  const controller = connections.get(sessionId);
-  if (controller) {
-    try {
-      const encoder = new TextEncoder();
-      const message = `data: ${JSON.stringify(data)}\n\n`;
-      controller.enqueue(encoder.encode(message));
-      console.log('📡 Broadcast enviado para sessionId:', sessionId, data.type);
-      return true;
-    } catch (error) {
-      console.error('❌ Erro ao enviar SSE broadcast:', error);
-      connections.delete(sessionId);
-      return false;
-    }
-  } else {
-    console.warn('⚠️ Nenhuma conexão ativa encontrada para sessionId:', sessionId);
-  }
-  return false;
-}
-
-// Função para obter estatísticas de conexões
-export function getConnectionStats() {
-  const stats = {
-    activeConnections: connections.size,
-    sessions: Array.from(connections.keys())
-  };
-  console.log('📊 Stats de conexões SSE:', stats);
-  return stats;
 } 
