@@ -118,6 +118,20 @@ export const getResponseId = (questionType: string, responseText: string): strin
   return optionsMap[questionType]?.[responseText] || responseText;
 };
 
+// Interface para UTM parameters
+interface UtmParams {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  fbclid?: string;
+  gclid?: string;
+  xcod?: string;
+  referrer?: string;
+  page_location?: string;
+}
+
 // Função para salvar dados no localStorage
 export const saveToLocalStorage = (formData: {
   name: string;
@@ -134,7 +148,7 @@ export const saveToLocalStorage = (formData: {
   porQueEscolher: string;
   compromisso: string;
   selectedCountry: Country;
-}): FormData | null => {
+}, utmParams?: UtmParams): FormData | null => {
   const dataToSave: FormData = {
     // Dados pessoais (estrutura original)
     name: formData.name || '',
@@ -157,12 +171,26 @@ export const saveToLocalStorage = (formData: {
     timestamp: new Date().toISOString(),
     submittedAt: new Date().toLocaleString('pt-BR'),
     
-    // Campos adicionais para N8N - REMOVENDO as letras, mantendo só textos
+    // Campos adicionais para N8N
     country_code: formData.selectedCountry.code || 'BR',
     country_name: formData.selectedCountry.name || 'Brasil',
     phone_code: formData.selectedCountry.phoneCode || '+55',
     form_version: '1.0',
-    quiz_completed: true
+    quiz_completed: true,
+    
+    // UTM Parameters (incluídos apenas se fornecidos)
+    ...(utmParams && {
+      utm_source: utmParams.utm_source,
+      utm_medium: utmParams.utm_medium,
+      utm_campaign: utmParams.utm_campaign,
+      utm_term: utmParams.utm_term,
+      utm_content: utmParams.utm_content,
+      fbclid: utmParams.fbclid,
+      gclid: utmParams.gclid,
+      xcod: utmParams.xcod,
+      referrer: utmParams.referrer,
+      page_location: utmParams.page_location
+    })
   };
   
   try {

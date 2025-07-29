@@ -41,6 +41,18 @@ export interface FormData {
   phone_code?: string;
   form_version?: string;
   quiz_completed?: boolean;
+  
+  // UTM Parameters
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  fbclid?: string;
+  gclid?: string;
+  xcod?: string;
+  referrer?: string;
+  page_location?: string;
 }
 
 export interface ValidationItem {

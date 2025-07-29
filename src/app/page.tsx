@@ -85,7 +85,7 @@ export default function Home() {
 
   // Hook para rastreamento UTM e Meta Pixel
   // Removido trackLead que não era usado
-  const { } = useUtmTracking();
+  const { getUtmParams } = useUtmTracking();
   
   // Hook para Microsoft Clarity Analytics
   const { trackQuizStep, trackQuizAbandonment, trackQuizCompletion, trackCalendlyClick, setUserSession, setCustomTag, upgradeSession } = useClarityTracking();
@@ -186,12 +186,6 @@ export default function Home() {
     console.log('📋 Dados que serão enviados:', JSON.stringify(formData, null, 2));
 
     try {
-      // Verifica se estamos em desenvolvimento local
-      if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-        console.warn('⚠️ Desenvolvimento local detectado, simulando envio bem-sucedido para n8n');
-        return true;
-      }
-
       // Verifica se a URL está configurada
       if (!N8N_WEBHOOK_URL || N8N_WEBHOOK_URL.includes('localhost')) {
         console.warn('⚠️ N8N webhook não configurado ou em localhost, pulando envio');
@@ -239,105 +233,7 @@ export default function Home() {
     }
   };
 
-  // Função para finalizar e enviar dados
-  const finishQuiz = async () => {
-    if (isSubmitting) {
-      console.log('⚠️ Envio já em andamento, aguarde...');
-      return;
-    }
-
-    console.log('🎯 Finalizando quiz...');
-    
-    // DEBUG: Verificar todos os estados antes do envio
-    console.log('🔍 Estados atuais antes do envio:', {
-      name,
-      phone,
-      email,
-      instagram,
-      selectedMoment,
-      vendeuFora,
-      faturamento,
-      caixaDisponivel,
-      problemaPrincipal,
-      areaAjuda,
-      possuiSocio,
-      porQueEscolher,
-      compromisso,
-      selectedCountry: selectedCountry?.name
-    });
-    
-    setIsSubmitting(true);
-    
-    try {
-      const formData = saveToLocalStorage({
-        name,
-        phone,
-        email,
-        instagram,
-        selectedMoment,
-        vendeuFora,
-        faturamento,
-        caixaDisponivel,
-        problemaPrincipal,
-        areaAjuda,
-        possuiSocio,
-        porQueEscolher,
-        compromisso,
-        selectedCountry
-      });
-      
-      if (formData) {
-        console.log('💾 Dados formatados para N8N:', formData);
-        console.log('💾 Dados salvos localmente, tentando enviar para N8N...');
-        
-        try {
-          // Usa o bridge seguro do N8N
-          const n8nResult = await sendToN8nWebhook(formData);
-
-          // Em desenvolvimento local, sempre considera sucesso
-          if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-            console.log('🚀 Desenvolvimento local: simulando sucesso total');
-            setSubmitStatus('success');
-            
-          } else if (n8nResult) {
-            console.log('🎉 Quiz finalizado e enviado com sucesso para N8N!');
-            setSubmitStatus('success');
-            
-            // Tracking Clarity - Quiz completado com sucesso
-            const totalTime = Math.round((Date.now() - quizStartTime) / 1000);
-            trackQuizCompletion(totalTime, true);
-            upgradeSession(); // Marca sessão como importante
-            setCustomTag('completion_status', 'success');
-            setCustomTag('leads_sent_count', '1');
-            
-            // Envia evento QuClick-calendly apenas quando há sucesso total
-            sendMetaEvent('QuClick-calendly', {
-              form_completed: true,
-              leads_sent: 1,
-              environment: 'production',
-              session_id: sessionId,
-              email: email,
-              phone: phone,
-            });
-          } else {
-            console.log('❌ Falha ao enviar para N8N, mas dados salvos localmente');
-            setSubmitStatus('partial');
-          }
-        } catch (error) {
-          console.error('❌ Erro ao enviar para N8N:', error);
-          setSubmitStatus('partial');
-        }
-      } else {
-        console.error('❌ Erro ao salvar dados localmente');
-        setSubmitStatus('error');
-      }
-    } catch (error) {
-      console.error('❌ Erro ao finalizar quiz:', error);
-      setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Função para finalizar e enviar dados - REMOVIDA (movida para handleAnalysisComplete)
 
   // Refs para controle de hydratação e animações
   const hasHydrated = useRef(false);
@@ -663,6 +559,10 @@ export default function Home() {
       setIsSubmitting(true);
       
       try {
+        // Captura UTMs atuais
+        const utmParams = getUtmParams();
+        console.log('🏷️ UTMs capturadas:', utmParams);
+        
         const formData = saveToLocalStorage({
           name,
           phone,
@@ -678,22 +578,21 @@ export default function Home() {
           porQueEscolher,
           compromisso,
           selectedCountry
-        });
+        }, utmParams);
         
         if (formData) {
           console.log('💾 Dados formatados para N8N:', formData);
           console.log('💾 Dados salvos localmente, tentando enviar para N8N...');
+          console.log('🌐 Hostname atual:', typeof window !== 'undefined' ? window.location.hostname : 'servidor');
+          console.log('🔗 URL N8N que será usada:', N8N_WEBHOOK_URL);
           
           try {
             // Usa o bridge seguro do N8N
+            console.log('🚀 Chamando sendToN8nWebhook...');
             const n8nResult = await sendToN8nWebhook(formData);
+            console.log('📨 Resultado do envio N8N:', n8nResult);
 
-            // Em desenvolvimento local, sempre considera sucesso
-            if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-              console.log('🚀 Desenvolvimento local: simulando sucesso total');
-              setSubmitStatus('success');
-              
-            } else if (n8nResult) {
+            if (n8nResult) {
               console.log('🎉 Quiz finalizado e enviado com sucesso para N8N!');
               setSubmitStatus('success');
               
@@ -732,7 +631,7 @@ export default function Home() {
         setIsSubmitting(false);
       }
     }, 500);
-  }, [initiateStepAnimation, name, phone, email, instagram, selectedMoment, vendeuFora, faturamento, caixaDisponivel, problemaPrincipal, areaAjuda, possuiSocio, porQueEscolher, compromisso, selectedCountry, isSubmitting, saveToLocalStorage, sendToN8nWebhook, setSubmitStatus, quizStartTime, trackQuizCompletion, upgradeSession, setCustomTag, sendMetaEvent, sessionId]);
+  }, [initiateStepAnimation, name, phone, email, instagram, selectedMoment, vendeuFora, faturamento, caixaDisponivel, problemaPrincipal, areaAjuda, possuiSocio, porQueEscolher, compromisso, selectedCountry, isSubmitting, saveToLocalStorage, sendToN8nWebhook, setSubmitStatus, quizStartTime, trackQuizCompletion, upgradeSession, setCustomTag, sendMetaEvent, sessionId, getUtmParams]);
 
   const handleContinue = async () => {
     if (isTransitioning.current || isSubmitting) {

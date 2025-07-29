@@ -9,6 +9,7 @@ interface UtmParams {
   utm_content?: string;
   fbclid?: string;
   gclid?: string;
+  xcod?: string;
   referrer?: string;
   page_location?: string;
 }
@@ -48,6 +49,7 @@ export const useUtmTracking = () => {
       utm_content: urlParams.get('utm_content') || undefined,
       fbclid: urlParams.get('fbclid') || undefined,
       gclid: urlParams.get('gclid') || undefined,
+      xcod: urlParams.get('xcod') || undefined,
       referrer: document.referrer || undefined,
       page_location: window.location.href
     };
@@ -61,9 +63,10 @@ export const useUtmTracking = () => {
     return {
       ...stored,
       ...current,
-      // fbclid e gclid são sempre da sessão atual se disponíveis
+      // fbclid, gclid e xcod são sempre da sessão atual se disponíveis
       fbclid: current.fbclid || stored.fbclid,
       gclid: current.gclid || stored.gclid,
+      xcod: current.xcod || stored.xcod,
       referrer: current.referrer || stored.referrer,
       page_location: current.page_location
     };
@@ -169,12 +172,10 @@ export const useUtmTracking = () => {
     }
   }, [getCurrentUtmParams]);
 
-  return { 
-    trackLead, 
-    trackCustomEvent, 
-    getStoredUtmParams, 
+  return {
+    trackLead,
+    getUtmParams: getAllTrackingParams, // Exporta função para obter UTMs
     getCurrentUtmParams,
-    getAllTrackingParams,
-    storeUtmParams
+    getStoredUtmParams
   };
 }; 
