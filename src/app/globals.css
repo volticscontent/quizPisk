@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   --background: #000000;
@@ -477,7 +477,7 @@ body {
   width: 100%;
   background: transparent;
   border: none;
-  color: white;
+  color: black;
   font-family: var(--font-maven-pro), sans-serif;
   cursor: pointer;
   transition: all 0.2s var(--easing-smooth);
@@ -520,11 +520,6 @@ body {
   transition: all 0.3s var(--easing-smooth);
 }
 
-.instagram-input-wrapper {
-  display: flex;
-  align-items: center;
-}
-
 .instagram-at-symbol {
   font-size: 32px;
   font-weight: 400;
@@ -535,6 +530,7 @@ body {
 }
 
 .instagram-input {
+  text-align: center;
   flex: 1;
   background: transparent;
   border: none;
@@ -554,8 +550,8 @@ body {
   transform: scale(1.05);
 }
 
-/* Multiple Choice Options - Animações premium */
-.moment-options-container {
+/* Generic Quiz Options - Reutilizáveis para todos os tipos de perguntas */
+.quiz-options-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -564,7 +560,7 @@ body {
   padding: 0 20px;
 }
 
-.moment-option-button {
+.quiz-option-button {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -586,7 +582,7 @@ body {
   transform-style: preserve-3d;
 }
 
-.moment-option-button::before {
+.quiz-option-button::before {
   content: '';
   position: absolute;
   top: 0;
@@ -599,18 +595,18 @@ body {
   transition: left 0.6s var(--easing-expo);
 }
 
-.moment-option-hidden {
+.quiz-option-hidden {
   opacity: 0;
   transform: translateY(40px) rotateX(10deg);
 }
 
-.moment-option-visible {
+.quiz-option-visible {
   opacity: 1;
   transform: translateY(0) rotateX(0deg);
   animation: momentOptionSlideInAdvanced 0.8s var(--easing-expo) forwards;
 }
 
-.moment-option-button:hover:not(.moment-option-selected) {
+.quiz-option-button:hover:not(.quiz-option-selected) {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(45, 211, 59, 0.4);
   transform: translateY(-6px) scale(1.02);
@@ -619,11 +615,11 @@ body {
     0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
-.moment-option-button:hover::before {
+.quiz-option-button:hover::before {
   left: 100%;
 }
 
-.moment-option-selected {
+.quiz-option-selected {
   background: rgba(45, 211, 59, 0.12);
   border-color: var(--orange);
   box-shadow: 
@@ -633,7 +629,7 @@ body {
   transform: translateY(-4px) scale(1.02);
 }
 
-.moment-option-selected::after {
+.quiz-option-selected::after {
   content: '';
   position: absolute;
   top: 0;
@@ -648,7 +644,7 @@ body {
   border-radius: inherit;
 }
 
-.moment-option-letter {
+.quiz-option-letter {
   background: linear-gradient(135deg, var(--orange) 0%, var(--orange-hover) 100%);
   color: white;
   border-radius: 12px;
@@ -666,7 +662,7 @@ body {
   box-shadow: 0 4px 12px rgba(45, 211, 59, 0.3);
 }
 
-.moment-option-selected .moment-option-letter {
+.quiz-option-selected .quiz-option-letter {
   background: linear-gradient(135deg, var(--orange-hover) 0%, #6fff00 100%);
   transform: scale(1.15) rotate(5deg);
   box-shadow: 
@@ -675,7 +671,7 @@ body {
   animation: letterBounce 0.6s var(--easing-back);
 }
 
-.moment-option-text {
+.quiz-option-text {
   font-size: 20px;
   font-weight: 400;
   line-height: 1.4;
@@ -685,10 +681,9 @@ body {
   transition: all 0.3s var(--easing-expo);
 }
 
-.moment-option-selected .moment-option-text {
+.quiz-option-selected .quiz-option-text {
   color: rgba(255, 255, 255, 0.95);
   font-weight: 500;
-  transform: translateX(4px);
 }
 
 /* Textarea para resposta longa */
@@ -1793,8 +1788,8 @@ body {
   box-shadow: 
     0 8px 25px rgba(45, 211, 59, 0.3),
     0 4px 12px rgba(45, 211, 59, 0.2);
-  min-width: 300px;
-  width: 600px;
+  min-width: 400px;
+  width: 700px;
   min-height: 60px;
   overflow: hidden;
   font-family: var(--font-maven-pro), sans-serif;
@@ -1875,6 +1870,7 @@ body {
   align-items: center;
   justify-content: center;
   transition: all 0.3s var(--easing-expo);
+  padding: 0px 10px 0 10px;
 }
 
 .TextWrapper-sc-__sc-1f8vz90-0.gbnXlt {
@@ -1944,9 +1940,13 @@ body {
 
   .ButtonWrapper-sc-__sc-1qu8p4z-0.eTknZ {
     width: 100%;
-    max-width: 480px;
+    max-width: 600px;
     min-width: auto;
     min-height: 56px;
+  }
+
+  .ButtonTextWrapper-sc-__sc-1qu8p4z-5.iWNLzO {
+    padding: 0px 15px 0 1px;
   }
 
   .FlexWrapper-sc-__sc-1qu8p4z-2.bnIfYq {
@@ -1972,6 +1972,10 @@ body {
     border-radius: 8px;
   }
 
+  .ButtonTextWrapper-sc-__sc-1qu8p4z-5.iWNLzO {
+    padding: 0px 15px 0 15px;
+  }
+
   .FlexWrapper-sc-__sc-1qu8p4z-2.bnIfYq {
     padding: 16px 24px;
   }
@@ -1994,6 +1998,10 @@ body {
     border-radius: 6px;
   }
 
+  .ButtonTextWrapper-sc-__sc-1qu8p4z-5.iWNLzO {
+    padding: 0px 15px 0 15px;
+  }
+
   .FlexWrapper-sc-__sc-1qu8p4z-2.bnIfYq {
     padding: 14px 20px;
   }
@@ -2001,7 +2009,11 @@ body {
   .TextWrapper-sc-__sc-1f8vz90-0.gbnXlt {
     font-size: 15px;
   }
-
+  
+  .ButtonTextWrapper-sc-__sc-1qu8p4z-5.iWNLzO {
+    padding: 0px 15px 0 15px;
+  }
+  
   /* Espaçamento adicional para compensar tela pequena */
   .spacer-wrapper-footer-main {
     margin-top: 20px;
@@ -2454,7 +2466,7 @@ body {
 
   /* Form group com margin otimizada */
   .form-group-main {
-    margin: 16px 0; /* Margin mais compacta */
+    margin: 16px 12px; /* Margin mais compacta */
   }
 
   /* Error e success messages mais próximas */
@@ -2737,7 +2749,7 @@ body {
 }
 
 .country-selector-button:hover {
-  border-color: #FA6B05;
+  border-color: #2fdd0c;
 }
 
 .country-flag {
@@ -2816,7 +2828,7 @@ body {
 }
 
 .country-option.selected {
-  background: #FA6B05;
+  background: #15e90e;
   color: white;
 }
 
@@ -3118,7 +3130,8 @@ body {
   /* Contador de caracteres */
   .character-counter {
     font-size: 11px;
-    margin-top: 4px;
+    margin-bottom: 10px;
+    margin-right: 5px;
   }
 
   /* Análise da IA compacta */
@@ -3219,7 +3232,7 @@ body {
 
 /* Botão do Calendly */
 .calendly-button {
-  background-color: #FA6B05;
+  background-color: var(--orange);
   color: white;
   border: none;
   border-radius: 8px;
@@ -3236,7 +3249,7 @@ body {
 }
 
 .calendly-button:hover {
-  background-color: #E55A04;
+  background-color: var(--orange);
   transform: scale(1.05);
   box-shadow: 0 6px 20px rgba(250, 107, 5, 0.4);
 }
@@ -3302,7 +3315,7 @@ body {
 
 .analysis-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FA6B05, #ff8533, #FA6B05);
+  background: linear-gradient(90deg, #2efa05, #ff8533, #2efa05);
   background-size: 200% 100%;
   border-radius: 6px;
   transition: width 0.8s ease;
@@ -3457,5 +3470,91 @@ body {
 @keyframes countdown-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
+}
+
+/* Responsividade para quiz options gen�ricas */
+@media (max-width: 768px) {
+  .quiz-option-button {
+    padding: 16px 20px;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .quiz-option-letter {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  
+  .quiz-option-text {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 480px) {
+  .quiz-option-button {
+    padding: 14px 18px;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  
+  .quiz-option-letter {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  
+  .quiz-option-text {
+    font-size: 15px;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 375px) {
+  .quiz-option-button {
+    padding: 12px 16px;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  
+  .quiz-option-letter {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+  
+  .quiz-option-text {
+    font-size: 14px;
+    line-height: 1.1;
+  }
+}
+
+/* Força largura do botão de ação - SEMPRE MANTER NO FINAL */
+.ButtonWrapper-sc-__sc-1qu8p4z-0.eTknZ.eTknZ {
+  min-width: 500px !important;
+  width: 800px !important;
+}
+
+@media (max-width: 768px) {
+  .ButtonWrapper-sc-__sc-1qu8p4z-0.eTknZ.eTknZ {
+    width: 100% !important;
+    max-width: 750px !important;
+    min-width: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ButtonWrapper-sc-__sc-1qu8p4z-0.eTknZ.eTknZ {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .ButtonWrapper-sc-__sc-1qu8p4z-0.eTknZ.eTknZ {
+    width: 100% !important;
+    max-width: none !important;
+  }
 }
 

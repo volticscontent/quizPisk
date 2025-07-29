@@ -1,0 +1,38 @@
+{
+  "functions": {
+    "src/app/api/quiz-updates/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/quiz-progress/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/n8n-bridge/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/quiz-updates",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Connection",
+          "value": "keep-alive"
+        },
+        {
+          "key": "Content-Type",
+          "value": "text/event-stream"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
+} 

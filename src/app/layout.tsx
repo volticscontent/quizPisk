@@ -61,7 +61,7 @@ export default function RootLayout({
               });
             `,
           }}
-        />
+        />      
         
         {/* Meta Pixel Code */}
         <Script
@@ -120,22 +120,9 @@ export default function RootLayout({
                   cleanParams[key] = value;
                 }
               });
-              
-              // ENVIAR APENAS UM PAGEVIEW - SEM EVENTOS DUPLICADOS
-              console.log('📊 Enviando PageView único para Meta Pixel:', cleanParams);
-              fbq('track', 'PageView', cleanParams);
             `,
           }}
         />
-        <noscript>
-          <img 
-            height="1" 
-            width="1" 
-            style={{display: 'none'}}
-            src="https://www.facebook.com/tr?id=1665742907429984&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${mavenPro.variable} antialiased`}
