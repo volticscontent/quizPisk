@@ -84,7 +84,6 @@ export default function Home() {
   // Removido validationState que não era usado
 
   // Hook para rastreamento UTM e Meta Pixel
-  // Removido trackLead que não era usado
   const { getUtmParams } = useUtmTracking();
   
   // Hook para Microsoft Clarity Analytics
@@ -1227,6 +1226,19 @@ export default function Home() {
                           phone: selectedCountry?.phoneCode + phone,
                           clicked_calendly: true
                         });
+                      }
+                      
+                      // Envia evento Lead padrão do Meta Pixel no clique do Calendly
+                      if (typeof window !== 'undefined' && window.fbq) {
+                        window.fbq('track', 'Lead', {
+                          event_type: 'calendly_click',
+                          form_completed: true,
+                          session_id: sessionId,
+                          email: email,
+                          phone: selectedCountry?.phoneCode + phone,
+                          clicked_calendly: true
+                        });
+                        console.log('📊 Meta Pixel Lead event sent on Calendly click');
                       }
                       
                       // Tracking Clarity - Click no Calendly

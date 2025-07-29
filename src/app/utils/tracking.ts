@@ -13,7 +13,7 @@ export const sendMetaEvent = (eventName: string, parameters?: Record<string, str
 
 // Função para enviar page view
 export const sendPageView = () => {
-  sendMetaEvent('QuPage-view', {
+  sendMetaEvent('QuPageView', {
     page_url: typeof window !== 'undefined' ? window.location.href : ''
   });
 };
@@ -28,14 +28,14 @@ export const getQuestionNumber = (step: QuizStep): number => {
     'momento': 5,
     'vendeu_fora': 6,
     'faturamento': 7,
-    'caixa_disponivel': 0, // Não envia evento (perguntas 8+ não rastreadas)
-    'problema_principal': 0,
-    'area_ajuda': 0,
-    'socio': 0,
-    'por_que_escolher': 0,
-    'compromisso': 0,
-    'analysis': 0,
-    'finished': 0
+    'caixa_disponivel': 8,
+    'problema_principal': 9,
+    'area_ajuda': 10,
+    'socio': 11,
+    'por_que_escolher': 12,
+    'compromisso': 13,
+    'analysis': 0, // Não envia evento
+    'finished': 0  // Não envia evento
   };
   return stepNumbers[step] || 0;
 };
@@ -44,7 +44,7 @@ export const getQuestionNumber = (step: QuizStep): number => {
 export const sendQuestionEvent = (step: QuizStep) => {
   const questionNumber = getQuestionNumber(step);
   if (questionNumber > 0) {
-    sendMetaEvent(`QuPergunta ${questionNumber.toString().padStart(2, '0')}`, {
+    sendMetaEvent(`QuPergunta${questionNumber}`, {
       step_name: step,
       question_number: questionNumber
     });
