@@ -2,8 +2,8 @@
 const nextConfig = {
   // Configuração otimizada para Vercel
   experimental: {
-    // Habilita recursos avançados da Vercel
-    serverActions: true,
+    // Server Actions são habilitados por padrão no Next.js 15
+    // Removido serverActions: true para compatibilidade
   },
   // Otimizações para Edge Runtime
   images: {
