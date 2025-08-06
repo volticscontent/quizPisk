@@ -78,9 +78,6 @@ export default function RootLayout({
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               
-              // Inicializar o pixel
-              fbq('init', '1665742907429984');
-              
               // Função para capturar todos os parâmetros de tracking
               function getAllTrackingParams() {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -92,6 +89,7 @@ export default function RootLayout({
                   utm_content: urlParams.get('utm_content') || '',
                   fbclid: urlParams.get('fbclid') || '',
                   gclid: urlParams.get('gclid') || '',
+                  page: urlParams.get('page') || '',
                   referrer: document.referrer || '',
                   page_location: window.location.href,
                   user_agent: navigator.userAgent,
@@ -102,24 +100,56 @@ export default function RootLayout({
               // Capturar parâmetros de tracking
               const trackingParams = getAllTrackingParams();
               
-              // Armazenar parâmetros importantes no sessionStorage
+              // Determinar qual pixel usar baseado no parâmetro 'page'
+              let pixelId = '1665742907429984'; // Pixel padrão (fallback)
+              
+              if (trackingParams.page === 'CopyKevin') {
+                pixelId = '728523633510605'; // Pixel para CopyKevin
+                console.log('📱 Usando Pixel CopyKevin:', pixelId);
+              } else if (trackingParams.page === 'oldEst' || trackingParams.page !== '') {
+                pixelId = '24125973820395929'; // Pixel para oldEst ou outros valores
+                console.log('📱 Usando Pixel oldEst/outros:', pixelId);
+              } else {
+                pixelId = '24125973820395929'; // Pixel padrão quando não há parâmetro page
+                console.log('📱 Usando Pixel padrão (sem page param):', pixelId);
+              }
+              
+              // Inicializar o pixel selecionado
+              fbq('init', pixelId);
+              console.log('📱 Meta Pixel inicializado com ID:', pixelId);
+              
+              // Armazenar parâmetros importantes no sessionStorage (incluindo pixelId usado)
+              const paramsToStore = {
+                ...trackingParams,
+                active_pixel_id: pixelId
+              };
+              
               if (trackingParams.utm_source || trackingParams.utm_medium || trackingParams.utm_campaign || 
-                  trackingParams.fbclid || trackingParams.gclid) {
+                  trackingParams.fbclid || trackingParams.gclid || trackingParams.page) {
                 try {
-                  sessionStorage.setItem('utmParams', JSON.stringify(trackingParams));
-                  console.log('📱 Parâmetros de tracking capturados e armazenados:', trackingParams);
+                  sessionStorage.setItem('utmParams', JSON.stringify(paramsToStore));
+                  console.log('📱 Parâmetros de tracking capturados e armazenados:', paramsToStore);
                 } catch (error) {
                   console.error('Erro ao armazenar parâmetros de tracking:', error);
                 }
               }
               
-              // Filtrar parâmetros não vazios para o PageView
+              // Filtrar parâmetros não vazios para eventos
               const cleanParams = {};
               Object.entries(trackingParams).forEach(([key, value]) => {
                 if (value && value !== '') {
                   cleanParams[key] = value;
                 }
               });
+              
+              // Adicionar informação do pixel ativo nos parâmetros
+              cleanParams.active_pixel_id = pixelId;
+              cleanParams.pixel_source = trackingParams.page === 'CopyKevin' ? 'copykevin' : 
+                                         (trackingParams.page === 'oldEst' ? 'oldest' : 'default');
+              
+              // Enviar o PageView inicial padrão
+              fbq('track', 'PageView', cleanParams);
+              console.log('📊 Meta Pixel PageView inicial enviado com UTMs:', cleanParams);
             `,
           }}
         />

@@ -9,7 +9,7 @@ import { useSSE } from './hooks/useSSE';
 // Importações dos arquivos modulares
 import { QuizStep, Country, ValidationState } from './types/quiz';
 import type { FormData } from './types/quiz';
-import { sendMetaEvent, sendPageView, sendQuestionEvent, getStepNumber } from './utils/tracking';
+import { sendMetaEvent, sendQuestionEvent, getStepNumber } from './utils/tracking';
 import { N8N_WEBHOOK_URL, POSTGRES_WEBHOOK_URL, COUNTRIES, CALENDLY_URL } from './utils/constants';
 import { validateCurrentStep } from './utils/validation';
 import { getResponseText, saveToLocalStorage, loadFromLocalStorage, savePartialDataToLocalStorage, loadPartialDataFromLocalStorage, formatCurrency } from './utils/dataHandlers';
@@ -352,7 +352,7 @@ export default function Home() {
         }
       }
       
-      sendPageView();
+      // sendPageView(); // REMOVIDO - PageView agora é enviado automaticamente no layout.tsx
       
       setTimeout(() => {
         if (hasHydrated.current) {
@@ -1216,19 +1216,23 @@ export default function Home() {
                     className={`ButtonWrapper-sc-__sc-1qu8p4z-0 eTknZ ${isButtonPressed ? 'button-pressed' : ''} ${(isButtonDisabled && currentStep !== 'finished') ? 'button-disabled' : ''}`}
                   onClick={currentStep === 'finished' ? 
                     () => {
-                      // Tracking Meta Pixel - Click no Calendly
+                      // Captura parâmetros UTM para incluir nos eventos
+                      const utmParams = getUtmParams();
+                      
+                      // Tracking Meta Pixel - Evento customizado QuClick-calendly
                       if (sendMetaEvent) {
                         sendMetaEvent('QuClick-calendly', {
                           form_completed: true,
-                          environment: 'production',
                           session_id: sessionId,
                           email: email,
                           phone: selectedCountry?.phoneCode + phone,
-                          clicked_calendly: true
+                          clicked_calendly: true,
+                          timestamp: new Date().toISOString(),
+                          ...utmParams
                         });
                       }
                       
-                      // Envia evento Lead padrão do Meta Pixel no clique do Calendly
+                      // Evento Lead padrão do Meta Pixel (conversão)
                       if (typeof window !== 'undefined' && window.fbq) {
                         window.fbq('track', 'Lead', {
                           event_type: 'calendly_click',
@@ -1236,7 +1240,8 @@ export default function Home() {
                           session_id: sessionId,
                           email: email,
                           phone: selectedCountry?.phoneCode + phone,
-                          clicked_calendly: true
+                          clicked_calendly: true,
+                          ...utmParams
                         });
                         console.log('📊 Meta Pixel Lead event sent on Calendly click');
                       }

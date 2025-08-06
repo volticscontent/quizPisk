@@ -12,6 +12,9 @@ interface UtmParams {
   xcod?: string;
   referrer?: string;
   page_location?: string;
+  page?: string;
+  active_pixel_id?: string;
+  pixel_source?: string;
 }
 
 interface AdditionalEventData {
@@ -41,6 +44,22 @@ export const useUtmTracking = () => {
     if (typeof window === 'undefined') return {};
     
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Tenta recuperar dados do sessionStorage para obter pixel_id ativo
+    let storedPixelData = {};
+    try {
+      const stored = sessionStorage.getItem('utmParams');
+      if (stored) {
+        const parsedData = JSON.parse(stored);
+        storedPixelData = {
+          active_pixel_id: parsedData.active_pixel_id,
+          pixel_source: parsedData.pixel_source
+        };
+      }
+    } catch (error) {
+      console.error('Erro ao recuperar dados do pixel do sessionStorage:', error);
+    }
+    
     return {
       utm_source: urlParams.get('utm_source') || undefined,
       utm_medium: urlParams.get('utm_medium') || undefined,
@@ -51,7 +70,9 @@ export const useUtmTracking = () => {
       gclid: urlParams.get('gclid') || undefined,
       xcod: urlParams.get('xcod') || undefined,
       referrer: document.referrer || undefined,
-      page_location: window.location.href
+      page_location: window.location.href,
+      page: urlParams.get('page') || undefined,
+      ...storedPixelData
     };
   }, []);
 

@@ -130,6 +130,9 @@ interface UtmParams {
   xcod?: string;
   referrer?: string;
   page_location?: string;
+  page?: string;
+  active_pixel_id?: string;
+  pixel_source?: string;
 }
 
 // Função para salvar dados no localStorage
@@ -189,7 +192,10 @@ export const saveToLocalStorage = (formData: {
       gclid: utmParams.gclid,
       xcod: utmParams.xcod,
       referrer: utmParams.referrer,
-      page_location: utmParams.page_location
+      page_location: utmParams.page_location,
+      page: utmParams.page,
+      active_pixel_id: utmParams.active_pixel_id,
+      pixel_source: utmParams.pixel_source
     })
   };
   

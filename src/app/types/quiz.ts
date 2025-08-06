@@ -53,6 +53,9 @@ export interface FormData {
   xcod?: string;
   referrer?: string;
   page_location?: string;
+  page?: string;
+  active_pixel_id?: string;
+  pixel_source?: string;
 }
 
 export interface ValidationItem {
