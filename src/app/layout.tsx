@@ -101,16 +101,16 @@ export default function RootLayout({
               const trackingParams = getAllTrackingParams();
               
               // Determinar qual pixel usar baseado no parâmetro 'page'
-              let pixelId = '1665742907429984'; // Pixel padrão (fallback)
+              let pixelId = '2412597382039592'; // Pixel padrão (fallback)
               
               if (trackingParams.page === 'CopyKevin') {
                 pixelId = '728523633510605'; // Pixel para CopyKevin
                 console.log('📱 Usando Pixel CopyKevin:', pixelId);
               } else if (trackingParams.page === 'oldEst' || trackingParams.page !== '') {
-                pixelId = '24125973820395929'; // Pixel para oldEst ou outros valores
+                pixelId = '2412597382039592'; // Pixel para oldEst ou outros valores
                 console.log('📱 Usando Pixel oldEst/outros:', pixelId);
               } else {
-                pixelId = '24125973820395929'; // Pixel padrão quando não há parâmetro page
+                pixelId = '2412597382039592'; // Pixel padrão quando não há parâmetro page
                 console.log('📱 Usando Pixel padrão (sem page param):', pixelId);
               }
               
