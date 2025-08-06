@@ -1,11 +1,42 @@
 // Tipos para o sistema de tracking
 type QuizStep = 'name' | 'whatsapp' | 'email' | 'instagram' | 'momento' | 'vendeu_fora' | 'faturamento' | 'caixa_disponivel' | 'problema_principal' | 'area_ajuda' | 'socio' | 'por_que_escolher' | 'compromisso' | 'analysis' | 'finished';
 
+// Função para obter o prefixo baseado na UTM page
+const getEventPrefix = (): string => {
+  if (typeof window === 'undefined') return 'Att';
+  
+  try {
+    // Primeiro tenta pegar do sessionStorage (mais confiável)
+    const storedParams = sessionStorage.getItem('utmParams');
+    if (storedParams) {
+      const parsedParams = JSON.parse(storedParams);
+      if (parsedParams.page === 'oldEst') {
+        return 'oldEst';
+      }
+    }
+    
+    // Fallback: pegar da URL atual
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    
+    return pageParam === 'oldEst' ? 'oldEst' : 'Att';
+  } catch (error) {
+    console.warn('⚠️ Erro ao determinar prefixo do evento:', error);
+    return 'Att'; // Fallback padrão
+  }
+};
+
 // Função para enviar eventos customizados para Meta Pixel usando trackCustom
 export const sendMetaEvent = (eventName: string, parameters?: Record<string, string | number | boolean>) => {
   if (typeof window !== 'undefined' && window.fbq) {
-    console.log(`📊 Meta Custom Event: ${eventName}`, parameters);
-    window.fbq('trackCustom', eventName, parameters);
+    // Adiciona o prefixo baseado na UTM page automaticamente
+    const prefix = getEventPrefix();
+    const prefixedEventName = eventName.startsWith('Qu') ? 
+      eventName.replace('Qu', `${prefix}-Qu`) : 
+      `${prefix}-${eventName}`;
+    
+    console.log(`📊 Meta Custom Event: ${prefixedEventName}`, parameters);
+    window.fbq('trackCustom', prefixedEventName, parameters);
   } else {
     console.log(`📊 Meta Pixel não carregado ainda. Custom Event: ${eventName}`, parameters);
   }
@@ -41,12 +72,12 @@ export const getQuestionNumber = (step: QuizStep): number => {
   return stepNumbers[step] || 0;
 };
 
-// Função para enviar evento de pergunta - AGORA SÓ ENVIA UM EVENTO
+// Função para enviar evento de pergunta - AGORA COM PREFIXO DINÂMICO
 export const sendQuestionEvent = (step: QuizStep) => {
   const questionNumber = getQuestionNumber(step);
   if (questionNumber > 0) {
-    // Envia APENAS o evento Att-QuPergunta (padrão unificado)
-    sendMetaEvent(`Att-QuPergunta${questionNumber}`, {
+    // Envia evento QuPergunta com prefixo baseado na UTM page
+    sendMetaEvent(`QuPergunta${questionNumber}`, {
       step_name: step,
       question_number: questionNumber,
       timestamp: new Date().toISOString()

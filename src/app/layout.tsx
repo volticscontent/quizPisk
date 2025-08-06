@@ -97,6 +97,18 @@ export default function RootLayout({
                 };
               }
               
+              // Função para obter o prefixo baseado na UTM page
+              function getEventPrefix() {
+                try {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const pageParam = urlParams.get('page');
+                  return pageParam === 'oldEst' ? 'oldEst' : 'Att';
+                } catch (error) {
+                  console.warn('⚠️ Erro ao determinar prefixo do evento:', error);
+                  return 'Att'; // Fallback padrão
+                }
+              }
+              
               // Capturar parâmetros de tracking
               const trackingParams = getAllTrackingParams();
               
@@ -147,9 +159,16 @@ export default function RootLayout({
               cleanParams.pixel_source = trackingParams.page === 'CopyKevin' ? 'copykevin' : 
                                          (trackingParams.page === 'oldEst' ? 'oldest' : 'default');
               
-              // Enviar o PageView inicial padrão
+              // Obter prefixo para eventos customizados
+              const eventPrefix = getEventPrefix();
+              
+              // Enviar o PageView inicial padrão (sem prefixo - evento nativo do Meta)
               fbq('track', 'PageView', cleanParams);
               console.log('📊 Meta Pixel PageView inicial enviado com UTMs:', cleanParams);
+              
+              // Enviar também um PageView customizado com prefixo para diferenciação
+              fbq('trackCustom', eventPrefix + '-PageView', cleanParams);
+              console.log('📊 Meta Pixel PageView customizado enviado:', eventPrefix + '-PageView', cleanParams);
             `,
           }}
         />
